@@ -103,153 +103,140 @@
   ],
   "views": [
     {
-      "id": "owner-dashboard",
-      "name": "ダッシュボード",
-      "type": "composite",
-      "prompt": "KPI（月次進捗・タスク完了率）をカード形式で上部に表示。プロジェクト別タスク数をグラフで中段に。",
-      "objects": [
-        {
-          "id": "co1",
-          "objectId": "project",
-          "variant": "collection"
-        },
-        {
-          "id": "co2",
-          "objectId": "task",
-          "variant": "collection"
-        },
-        {
-          "id": "co3",
-          "objectId": "member",
-          "variant": "collection"
-        }
-      ],
-      "x": -210,
-      "y": -99
-    },
-    {
       "id": "project-list",
       "name": "プロジェクト一覧",
-      "type": "view",
-      "prompt": "プロジェクトをカード形式で一覧表示。新規作成ボタン付き。",
-      "objects": [
-        {
-          "id": "o1",
-          "objectId": "project",
-          "variant": "collection"
-        }
+      "type": "collection",
+      "objectId": "project",
+      "fields": [
+        "プロジェクト名",
+        "ステータス",
+        "メンバー数"
       ],
-      "x": 108,
-      "y": 44
+      "verbs": [
+        "作成",
+        "削除"
+      ],
+      "prompt": "プロジェクトをカード形式で一覧表示。新規作成ボタン付き。",
+      "x": 14,
+      "y": -42
     },
     {
       "id": "project-detail",
       "name": "プロジェクト詳細",
-      "type": "view",
-      "prompt": "タスク一覧をカンバン形式で表示。メンバー一覧サイドパネル付き。",
-      "objects": [
-        {
-          "id": "o2",
-          "objectId": "project",
-          "variant": "single"
-        },
-        {
-          "id": "o3",
-          "objectId": "task",
-          "variant": "collection"
-        },
-        {
-          "id": "o4",
-          "objectId": "member",
-          "variant": "collection"
-        }
+      "type": "single",
+      "objectId": "project",
+      "fields": [
+        "プロジェクト名",
+        "説明",
+        "ステータス",
+        "期限"
       ],
-      "x": -213,
-      "y": 263
+      "verbs": [
+        "編集",
+        "削除"
+      ],
+      "prompt": "タスク一覧をカンバン形式で表示。メンバー一覧サイドパネル付き。",
+      "x": -205,
+      "y": 222
+    },
+    {
+      "id": "task-list",
+      "name": "タスク一覧",
+      "type": "collection",
+      "objectId": "task",
+      "fields": [
+        "タスク名",
+        "担当者",
+        "期限",
+        "ステータス"
+      ],
+      "verbs": [
+        "作成",
+        "検索",
+        "削除"
+      ],
+      "prompt": "タスクをカンバン形式で表示。ドラッグでステータス変更。",
+      "x": 358,
+      "y": 190
     },
     {
       "id": "task-detail",
       "name": "タスク詳細",
-      "type": "view",
-      "prompt": "タスクの編集フォームとコメントスレッド。ラベル選択はタグピッカー。",
-      "objects": [
-        {
-          "id": "o5",
-          "objectId": "task",
-          "variant": "single"
-        },
-        {
-          "id": "o6",
-          "objectId": "comment",
-          "variant": "collection"
-        },
-        {
-          "id": "o7",
-          "objectId": "label",
-          "variant": "collection"
-        }
+      "type": "single",
+      "objectId": "task",
+      "fields": [
+        "タスク名",
+        "説明",
+        "担当者",
+        "期限",
+        "ラベル"
       ],
+      "verbs": [
+        "編集",
+        "コメント",
+        "削除"
+      ],
+      "prompt": "タスクの編集フォームとコメントスレッド。ラベル選択はタグピッカー。",
       "x": 0,
       "y": 500
     },
     {
       "id": "member-management",
       "name": "メンバー管理",
-      "type": "view",
-      "prompt": "ワークスペースのメンバー一覧。招待・削除・ロール変更。",
-      "objects": [
-        {
-          "id": "o11",
-          "objectId": "member",
-          "variant": "collection"
-        }
+      "type": "collection",
+      "objectId": "member",
+      "fields": [
+        "名前",
+        "メール",
+        "ロール"
       ],
-      "x": -600,
-      "y": 60
+      "verbs": [
+        "招待",
+        "削除",
+        "ロール変更"
+      ],
+      "prompt": "ワークスペースのメンバー一覧。招待・削除・ロール変更。",
+      "x": 604,
+      "y": -25
     },
     {
       "id": "label-management",
       "name": "ラベル管理",
-      "type": "view",
-      "prompt": "ラベルの作成・編集・削除。色とテキストを設定。",
-      "objects": [
-        {
-          "id": "o12",
-          "objectId": "label",
-          "variant": "collection"
-        }
+      "type": "collection",
+      "objectId": "label",
+      "fields": [
+        "ラベル名",
+        "色"
       ],
+      "verbs": [
+        "作成",
+        "編集",
+        "削除"
+      ],
+      "prompt": "ラベルの作成・編集・削除。色とテキストを設定。",
       "x": -600,
-      "y": 260
+      "y": 399
     },
     {
       "id": "member-my-tasks",
       "name": "マイタスク",
-      "type": "view",
-      "prompt": "自分にアサインされたタスクを期限順に表示。",
-      "objects": [
-        {
-          "id": "o8",
-          "objectId": "task",
-          "variant": "collection"
-        },
-        {
-          "id": "o13",
-          "objectId": "member",
-          "variant": "collection"
-        }
+      "type": "collection",
+      "objectId": "task",
+      "fields": [
+        "タスク名",
+        "期限",
+        "ステータス"
       ],
-      "x": 376,
-      "y": 310
+      "verbs": [
+        "作成",
+        "編集"
+      ],
+      "prompt": "自分にアサインされたタスクを期限順に表示。",
+      "x": -345,
+      "y": 609
     }
   ],
   "transitions": [
-    {
-      "id": "t1",
-      "from": "owner-dashboard",
-      "to": "project-list",
-      "trigger": "Tap プロジェクト一覧"
-    },
     {
       "id": "t2",
       "from": "project-list",
@@ -258,15 +245,15 @@
     },
     {
       "id": "t3",
-      "from": "project-detail",
-      "to": "task-detail",
-      "trigger": "Tap タスクカード"
+      "from": "project-list",
+      "to": "task-list",
+      "trigger": "Tap タスク"
     },
     {
       "id": "t4",
-      "from": "owner-dashboard",
-      "to": "member-management",
-      "trigger": "Tap メンバー管理"
+      "from": "task-list",
+      "to": "task-detail",
+      "trigger": "Tap タスク行"
     },
     {
       "id": "t6",
