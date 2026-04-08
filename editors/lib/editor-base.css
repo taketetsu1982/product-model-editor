@@ -1,0 +1,47 @@
+/* docs/reqs/lib/editor-base.css — 両エディタ共通CSS */
+.msi{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:18px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-smoothing:antialiased}
+:root{
+  --md-sys-color-primary:#0B57D0;
+  --md-sys-color-on-primary:#FFFFFF;
+  --md-sys-color-primary-container:#D3E3FD;
+  --md-sys-color-on-primary-container:#041E49;
+  --md-sys-color-secondary:#5F6368;
+  --md-sys-color-error:#B3261E;
+  --md-sys-color-error-container:#F9DEDC;
+  --md-sys-color-on-error-container:#410E0B;
+  --md-sys-color-surface:#FFFFFF;
+  --md-sys-color-surface-container-lowest:#FFFFFF;
+  --md-sys-color-surface-container-low:#FAFAFA;
+  --md-sys-color-surface-container:#F5F5F5;
+  --md-sys-color-surface-container-high:#F0F0F0;
+  --md-sys-color-surface-container-highest:#E8EAED;
+  --md-sys-color-on-surface:#1A1A1A;
+  --md-sys-color-on-surface-variant:#5F6368;
+  --md-sys-color-outline:#9AA0A6;
+  --md-sys-color-outline-variant:#E0E0E0;
+  --md-sys-color-inverse-surface:#303030;
+  --md-sys-color-inverse-on-surface:#F2F2F2;
+  --md-sys-elevation-1:0px 1px 3px rgba(0,0,0,.08),0px 1px 2px rgba(0,0,0,.06);
+  --md-sys-elevation-2:0px 2px 6px rgba(0,0,0,.1),0px 1px 3px rgba(0,0,0,.06);
+  --md-sys-shape-xs:6px;--md-sys-shape-sm:10px;--md-sys-shape-md:14px;--md-sys-shape-lg:18px;--md-sys-shape-xl:24px;--md-sys-shape-full:9999px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body,#root{height:100%;overflow:hidden;font-size:14px}
+body{font-family:'Google Sans','Roboto','Noto Sans JP',system-ui,sans-serif;color:var(--md-sys-color-on-surface);background:var(--md-sys-color-surface)}
+.file-drop-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(11,87,208,.08);border:3px dashed var(--md-sys-color-primary);align-items:center;justify-content:center}
+.file-drop-overlay.active{display:flex}
+.drop-msg{font-size:16px;font-weight:500;color:var(--md-sys-color-primary);background:var(--md-sys-color-surface-container-lowest);padding:20px 40px;border-radius:var(--md-sys-shape-lg);box-shadow:var(--md-sys-elevation-2)}
+.ed-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--md-sys-color-inverse-surface);color:var(--md-sys-color-inverse-on-surface);padding:10px 24px;border-radius:var(--md-sys-shape-xs);font-size:14px;font-weight:400;line-height:20px;opacity:0;transition:opacity .2s;z-index:10000;pointer-events:none;box-shadow:var(--md-sys-elevation-2)}
+.ed-toast.show{opacity:1}
+.ed-toolbar{display:none}
+.ed-connect-btn{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--md-sys-color-outline-variant);border-radius:var(--md-sys-shape-full);padding:6px 16px;font-size:14px;font-weight:500;line-height:20px;color:var(--md-sys-color-on-surface-variant);cursor:pointer;transition:background .15s}
+.ed-connect-btn:hover{background:var(--md-sys-color-surface-container)}
+.ed-dot{width:8px;height:8px;border-radius:50%;background:#DADCE0}
+.ed-dot.connected{background:#34A853}.ed-dot.saving{background:#E37400}.ed-dot.error{background:var(--md-sys-color-error)}
+.ed-hint{font-weight:400;color:var(--md-sys-color-outline);font-size:12px;line-height:16px}
+.ed-edited{display:none;font-size:12px;font-weight:500;line-height:16px;color:#E37400;letter-spacing:0.1px}
+.ed-auto-switch{display:none;align-items:center;gap:6px;font-size:14px;font-weight:500;color:var(--md-sys-color-on-surface-variant);cursor:pointer;user-select:none}
+.ed-auto-switch .ed-switch-track{position:relative;width:32px;height:18px;background:var(--md-sys-color-outline);border-radius:var(--md-sys-shape-full);transition:background .2s}
+.ed-auto-switch.active .ed-switch-track{background:#0B57D0}
+.ed-auto-switch .ed-switch-thumb{position:absolute;top:3px;left:3px;width:12px;height:12px;background:var(--md-sys-color-surface-container-lowest);border-radius:50%;transition:left .2s}
+.ed-auto-switch.active .ed-switch-thumb{left:17px}
