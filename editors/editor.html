@@ -181,6 +181,7 @@ function ObjectView({model,setModel,setModelSilent,selId,setSelId,selRelId,setSe
         </div>
         {selRelId&&selRel&&(()=>{const owner=ents.find(e=>e.id===selRelId.entId),tgt=ents.find(e=>e.id===selRel.targetId);if(!owner||!tgt)return null;let sx,sy;if(owner.id===tgt.id){sx=(owner.x+EW-SELF_REF_X+SELF_REF_CP-pan.x)*zoom;sy=(owner.y+SELF_REF_Y-20-pan.y)*zoom;}else{const fp=edgePt(owner.x,owner.y,EW,EH,tgt.x+EW/2,tgt.y+EH/2),tp=edgePt(tgt.x,tgt.y,EW,EH,owner.x+EW/2,owner.y+EH/2);sx=((fp.x+tp.x)/2-pan.x)*zoom;sy=((fp.y+tp.y)/2-pan.y)*zoom;}return<div style={{position:"absolute",left:sx,top:sy-48,transform:"translateX(-50%)",background:"white",borderRadius:8,boxShadow:"var(--md-sys-elevation-2)",padding:"4px 6px",zIndex:2}} onClick={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()}><select value={selRel.type} onChange={e=>updRelField(selRelId.entId,selRelId.relId,"type",e.target.value)} style={{border:"1px solid #E0E0E0",borderRadius:6,fontSize:12,padding:"2px 4px",background:"white",cursor:"pointer",fontFamily:"inherit"}}>{REL_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>;})()}
       </div>
+      {showActorEdit&&<ActorEditModal actors={model.actors} onSave={handleActorEditSave} onClose={()=>setShowActorEdit(false)}/>}
     </div>
   );
 }
@@ -348,7 +349,7 @@ function App(){
       const ent=histRef.current.stack[histRef.current.idx]?.objects?.find(e=>e.id===objSelId);
       if(!ent)return false;
       clipRef.current={type:'object',data:JSON.parse(JSON.stringify(ent))};
-      setModel(m=>({...m,objects:m.objects.filter(e=>e.id!==objSelId)}));
+      setModel(m=>({...m,objects:m.objects.filter(e=>e.id!==objSelId),actors:m.actors.map(a=>({...a,objectIds:(a.objectIds||[]).filter(oid=>oid!==objSelId)}))}));
       setObjSelId(null);
       showToast('Cut: '+ent.name);
       return true;
@@ -381,7 +382,7 @@ function App(){
       if(!objSelId)return false;
       const ent=model.objects.find(e=>e.id===objSelId);
       if(!ent)return false;
-      setModel(m=>({...m,objects:m.objects.filter(e=>e.id!==objSelId)}));
+      setModel(m=>({...m,objects:m.objects.filter(e=>e.id!==objSelId),actors:m.actors.map(a=>({...a,objectIds:(a.objectIds||[]).filter(oid=>oid!==objSelId)}))}));
       setObjSelId(null);
       showToast('Deleted: '+ent.name);
       return true;
