@@ -66,7 +66,7 @@ io.setupKeyboard();
 <script type="text/babel">
 const{useState,useRef,useCallback,useEffect}=React;
 const{M3,Input,Sel,Btn,SLabel,useInitialPan,useHistory}=window.__editorUI;
-const{CRUD_OPS,CRUD_COLOR,CRUD_BG,ENT_PALETTE,ZOOM_MIN,ZOOM_MAX,MAX_HISTORY,uid,uniqueName,edgePt,calcCenterPan,labelWidth}=window.__editorLib;
+const{CRUD_OPS,CRUD_COLOR,CRUD_BG,OBJ_PALETTE,ZOOM_MIN,ZOOM_MAX,MAX_HISTORY,uid,uniqueName,edgePt,calcCenterPan,labelWidth}=window.__editorLib;
 const{ensurePositions:_ensurePositions,CIRCLED,circled}=window.__editorLib;
 const objPalette=(ents,id)=>window.__editorLib.objPalette(ents,id);
 const objColor=(ents,id)=>window.__editorLib.objColor(ents,id);
@@ -106,7 +106,7 @@ function ObjectView({model,setModel,setModelSilent,selId,setSelId,selRelId,setSe
   const onWheel=useCallback(e=>{e.preventDefault();if(e.ctrlKey||e.metaKey){const r=svgRef.current.getBoundingClientRect();const mx=(e.clientX-r.left),my=(e.clientY-r.top);const d=e.deltaY>0?0.92:1.08;setZoom(z=>{const nz=Math.min(ZOOM_MAX,Math.max(ZOOM_MIN,z*d));const wx=mx/z+pan.x,wy=my/z+pan.y;setPan({x:wx-mx/nz,y:wy-my/nz});return nz;});}else{setPan(p=>({x:p.x+e.deltaX/zoom,y:p.y+e.deltaY/zoom}));}},[zoom,pan]);
   const upd=u=>setModel(m=>({...m,objects:m.objects.map(e=>e.id===u.id?u:e)}));
   const updRelField=(entId,relId,k,v)=>setModel(m=>({...m,objects:m.objects.map(e=>e.id===entId?{...e,relations:e.relations.map(r=>r.id===relId?{...r,[k]:v}:r)}:e)}));
-  const addObj=()=>{const id=uid();setModel(m=>{const names=m.objects.map(e=>e.name);return{...m,objects:[...m.objects,{id,name:uniqueName("NewObject",names),x:120/zoom+pan.x,y:120/zoom+pan.y,relations:[]}]};});setSelId(id);};
+  const addObj=()=>{const id=uid();setModel(m=>{const names=m.objects.map(e=>e.name);return{...m,objects:[...m.objects,{id,name:uniqueName("New Object",names),x:120/zoom+pan.x,y:120/zoom+pan.y,relations:[]}]};});setSelId(id);};
   const connOn=conn!==null,connHasSrc=conn!==null&&conn!=="";
   return(
     <div style={{display:"flex",height:"100%",position:"relative"}}>

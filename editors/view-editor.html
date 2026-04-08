@@ -83,12 +83,12 @@ const loadGenRef={current:0};
 
 const vwActorIds=s=>(s.actorIds||(s.actorId?[s.actorId]:[]));
 
-function WarningBadge({screens}){
+function WarningBadge({model}){
   const[open,setOpen]=useState(false);
   const warnings=[];
   CONCEPT.actors.forEach(actor=>{
     const touchedIds=(actor.touches||[]).filter(t=>(t.crud||[]).length>0).map(t=>t.objectId);
-    const actorViews=screens.views.filter(s=>vwActorIds(s).includes(actor.id));
+    const actorViews=model.views.filter(s=>vwActorIds(s).includes(actor.id));
     const usedIds=new Set(actorViews.flatMap(s=>(s.objects||[]).map(o=>o.objectId)));
     const missing=touchedIds.filter(eid=>!usedIds.has(eid));
     if(missing.length>0){const names=missing.map(eid=>CONCEPT.objects.find(e=>e.id===eid)?.name||eid);warnings.push({actor:actor.name,msg:`「${names.join("」「")}」がビューに含まれていません`});}
@@ -107,32 +107,32 @@ function WarningBadge({screens}){
   </div>;
 }
 
-function MapView({screens,setScreens,setScreensSilent,onSelectScreen,onSelChange,initialActorId}){
+function MapView({model,setModel,setModelSilent,onSelectScreen,onSelChange,initialActorId}){
   const[filterActorId,setFilterActorId]=useState(initialActorId??null);
   const[selNavId,setSelNavId]=useState(null),[selId,setSelId]=useState(null),[drag,setDrag]=useState(null),[conn,setConn]=useState(null),[connDrag,setConnDrag]=useState(null),[navDrag,setNavDrag]=useState(null),[editLabel,setEditLabel]=useState(false);
   const[multiSel,setMultiSel]=useState(new Set());
-  const selVw=selId?screens.views.find(s=>s.id===selId):null;
-  const{svgRef,pan,setPan}=useInitialPan(screens.views,SW,SH,loadGenRef);
+  const selVw=selId?model.views.find(s=>s.id===selId):null;
+  const{svgRef,pan,setPan}=useInitialPan(model.views,SW,SH,loadGenRef);
   const[panning,setPanning]=useState(false),[zoom,setZoom]=useState(1);
   const dOff=useRef({x:0,y:0}),panStart=useRef({x:0,y:0,px:0,py:0}),didDrag=useRef(false),multiOffsets=useRef({});
-  const visVw=screens.views;
+  const visVw=model.views;
   // View + Compositeの両方からノードを検索する関数
   const findNode=id=>{const s=visVw.find(s=>s.id===id);if(s)return{...s,h:SH+Math.max(0,(s.objects||[]).length)*SC_OBJ_ROW_H};return null;};
-  const visNav=screens.transitions.filter(n=>findNode(n.from)&&findNode(n.to));
+  const visNav=model.transitions.filter(n=>findNode(n.from)&&findNode(n.to));
   const selNav=visNav.find(n=>n.id===selNavId);
-  const updNav=u=>setScreens(m=>({...m,transitions:m.transitions.map(n=>n.id===u.id?u:n)}));
-  const delNav=id=>{setSelNavId(null);setEditLabel(false);setScreens(m=>({...m,transitions:m.transitions.filter(n=>n.id!==id)}));};
-  const addView=(type="view")=>{const id=uid();const names=screens.views.map(s=>s.name);const defaultName=type==="composite"?"New Composite":"NewView";setScreens(m=>({...m,views:[...m.views,{id,name:uniqueName(defaultName,names),type,actorIds:CONCEPT.actors[0]?[CONCEPT.actors[0].id]:[],x:120/zoom+pan.x,y:120/zoom+pan.y,prompt:"",objects:[]}]}));};
+  const updNav=u=>setModel(m=>({...m,transitions:m.transitions.map(n=>n.id===u.id?u:n)}));
+  const delNav=id=>{setSelNavId(null);setEditLabel(false);setModel(m=>({...m,transitions:m.transitions.filter(n=>n.id!==id)}));};
+  const addView=(type="view")=>{const id=uid();const names=model.views.map(s=>s.name);const defaultName=type==="composite"?"New Composite":"New View";setModel(m=>({...m,views:[...m.views,{id,name:uniqueName(defaultName,names),type,actorIds:CONCEPT.actors[0]?[CONCEPT.actors[0].id]:[],x:120/zoom+pan.x,y:120/zoom+pan.y,prompt:"",objects:[]}]}));};
   const onHandleMD=(e,navId,end)=>{e.preventDefault();e.stopPropagation();const r=svgRef.current.getBoundingClientRect();setNavDrag({navId,end,mx:(e.clientX-r.left)/zoom+pan.x,my:(e.clientY-r.top)/zoom+pan.y});setSelNavId(null);setEditLabel(false);};
   const connOn=conn!==null,connHasSrc=conn!==null&&conn!=="";
   const onBgMD=e=>{if(connOn)return;setPanning(true);panStart.current={x:e.clientX,y:e.clientY,px:pan.x,py:pan.y};};
-  const onBoxMD=(e,id)=>{e.stopPropagation();if(connOn){if(conn===""){setConn(id);const r2=svgRef.current.getBoundingClientRect();setConnDrag({mx:(e.clientX-r2.left)/zoom+pan.x,my:(e.clientY-r2.top)/zoom+pan.y});return;}if(conn!==id){setScreens(m=>({...m,transitions:[...m.transitions,{id:uid(),from:conn,to:id,trigger:"Tap"}]}));setConn(null);}setConnDrag(null);return;}const r=svgRef.current.getBoundingClientRect();const mx=(e.clientX-r.left)/zoom+pan.x,my=(e.clientY-r.top)/zoom+pan.y;setSelNavId(null);setEditLabel(false);if(e.shiftKey){window.getSelection()?.removeAllRanges();const next=new Set(multiSel);if(next.has(id))next.delete(id);else next.add(id);if(selId&&!next.has(selId))next.add(selId);setMultiSel(next);setSelId(null);const off={};next.forEach(nid=>{const sc=visVw.find(s=>s.id===nid);if(sc)off[nid]={x:mx-sc.x,y:my-sc.y};});multiOffsets.current=off;didDrag.current=false;setDrag(id);return;}if(multiSel.size>0&&multiSel.has(id)){const off={};multiSel.forEach(nid=>{const sc=visVw.find(s=>s.id===nid);if(sc)off[nid]={x:mx-sc.x,y:my-sc.y};});multiOffsets.current=off;didDrag.current=false;setDrag(id);return;}setMultiSel(new Set());multiOffsets.current={};setSelId(id);const sc=visVw.find(s=>s.id===id);dOff.current={x:mx-sc.x,y:my-sc.y};didDrag.current=false;setDrag(id);};
-  const onMM=useCallback(e=>{if(connDrag){if(conn===null){setConnDrag(null);return;}const r=svgRef.current.getBoundingClientRect();setConnDrag({mx:(e.clientX-r.left)/zoom+pan.x,my:(e.clientY-r.top)/zoom+pan.y});return;}if(navDrag){const r=svgRef.current.getBoundingClientRect();setNavDrag(d=>({...d,mx:(e.clientX-r.left)/zoom+pan.x,my:(e.clientY-r.top)/zoom+pan.y}));return;}if(drag){didDrag.current=true;const r=svgRef.current.getBoundingClientRect();const mx=(e.clientX-r.left)/zoom+pan.x,my=(e.clientY-r.top)/zoom+pan.y;if(multiSel.size>0){const off=multiOffsets.current;setScreensSilent(m=>({...m,views:m.views.map(s=>off[s.id]!==undefined?{...s,x:mx-off[s.id].x,y:my-off[s.id].y}:s)}));}else{setScreensSilent(m=>({...m,views:m.views.map(s=>s.id===drag?{...s,x:mx-dOff.current.x,y:my-dOff.current.y}:s)}));}return;}if(panning){setPan({x:panStart.current.px-(e.clientX-panStart.current.x)/zoom,y:panStart.current.py-(e.clientY-panStart.current.y)/zoom});}},[connDrag,conn,navDrag,drag,panning,pan,zoom,setScreensSilent,multiSel]);
-  const onUp=()=>{if(connDrag){const hit=visVw.find(s=>{const n=findNode(s.id);return n&&connDrag.mx>=n.x&&connDrag.mx<=n.x+SW&&connDrag.my>=n.y&&connDrag.my<=n.y+n.h;});if(hit&&conn&&hit.id!==conn){setScreens(m=>({...m,transitions:[...m.transitions,{id:uid(),from:conn,to:hit.id,trigger:"Tap"}]}));setConn(null);}else if(!hit){setConn("");}setConnDrag(null);return;}if(navDrag){const hit=visVw.find(s=>{const n=findNode(s.id);return n&&navDrag.mx>=n.x&&navDrag.mx<=n.x+SW&&navDrag.my>=n.y&&navDrag.my<=n.y+n.h;});if(hit){const nav=screens.transitions.find(n=>n.id===navDrag.navId);if(nav){const field=navDrag.end==="from"?"from":"to";const other=field==="from"?"to":"from";if(hit.id!==nav[other]){setScreens(m=>({...m,transitions:m.transitions.map(n=>n.id===navDrag.navId?{...n,[field]:hit.id}:n)}));}}}setNavDrag(null);return;}if(drag&&didDrag.current)setScreens(m=>m);setDrag(null);setPanning(false);};
+  const onBoxMD=(e,id)=>{e.stopPropagation();if(connOn){if(conn===""){setConn(id);const r2=svgRef.current.getBoundingClientRect();setConnDrag({mx:(e.clientX-r2.left)/zoom+pan.x,my:(e.clientY-r2.top)/zoom+pan.y});return;}if(conn!==id){setModel(m=>({...m,transitions:[...m.transitions,{id:uid(),from:conn,to:id,trigger:"Tap"}]}));setConn(null);}setConnDrag(null);return;}const r=svgRef.current.getBoundingClientRect();const mx=(e.clientX-r.left)/zoom+pan.x,my=(e.clientY-r.top)/zoom+pan.y;setSelNavId(null);setEditLabel(false);if(e.shiftKey){window.getSelection()?.removeAllRanges();const next=new Set(multiSel);if(next.has(id))next.delete(id);else next.add(id);if(selId&&!next.has(selId))next.add(selId);setMultiSel(next);setSelId(null);const off={};next.forEach(nid=>{const sc=visVw.find(s=>s.id===nid);if(sc)off[nid]={x:mx-sc.x,y:my-sc.y};});multiOffsets.current=off;didDrag.current=false;setDrag(id);return;}if(multiSel.size>0&&multiSel.has(id)){const off={};multiSel.forEach(nid=>{const sc=visVw.find(s=>s.id===nid);if(sc)off[nid]={x:mx-sc.x,y:my-sc.y};});multiOffsets.current=off;didDrag.current=false;setDrag(id);return;}setMultiSel(new Set());multiOffsets.current={};setSelId(id);const sc=visVw.find(s=>s.id===id);dOff.current={x:mx-sc.x,y:my-sc.y};didDrag.current=false;setDrag(id);};
+  const onMM=useCallback(e=>{if(connDrag){if(conn===null){setConnDrag(null);return;}const r=svgRef.current.getBoundingClientRect();setConnDrag({mx:(e.clientX-r.left)/zoom+pan.x,my:(e.clientY-r.top)/zoom+pan.y});return;}if(navDrag){const r=svgRef.current.getBoundingClientRect();setNavDrag(d=>({...d,mx:(e.clientX-r.left)/zoom+pan.x,my:(e.clientY-r.top)/zoom+pan.y}));return;}if(drag){didDrag.current=true;const r=svgRef.current.getBoundingClientRect();const mx=(e.clientX-r.left)/zoom+pan.x,my=(e.clientY-r.top)/zoom+pan.y;if(multiSel.size>0){const off=multiOffsets.current;setModelSilent(m=>({...m,views:m.views.map(s=>off[s.id]!==undefined?{...s,x:mx-off[s.id].x,y:my-off[s.id].y}:s)}));}else{setModelSilent(m=>({...m,views:m.views.map(s=>s.id===drag?{...s,x:mx-dOff.current.x,y:my-dOff.current.y}:s)}));}return;}if(panning){setPan({x:panStart.current.px-(e.clientX-panStart.current.x)/zoom,y:panStart.current.py-(e.clientY-panStart.current.y)/zoom});}},[connDrag,conn,navDrag,drag,panning,pan,zoom,setModelSilent,multiSel]);
+  const onUp=()=>{if(connDrag){const hit=visVw.find(s=>{const n=findNode(s.id);return n&&connDrag.mx>=n.x&&connDrag.mx<=n.x+SW&&connDrag.my>=n.y&&connDrag.my<=n.y+n.h;});if(hit&&conn&&hit.id!==conn){setModel(m=>({...m,transitions:[...m.transitions,{id:uid(),from:conn,to:hit.id,trigger:"Tap"}]}));setConn(null);}else if(!hit){setConn("");}setConnDrag(null);return;}if(navDrag){const hit=visVw.find(s=>{const n=findNode(s.id);return n&&navDrag.mx>=n.x&&navDrag.mx<=n.x+SW&&navDrag.my>=n.y&&navDrag.my<=n.y+n.h;});if(hit){const nav=model.transitions.find(n=>n.id===navDrag.navId);if(nav){const field=navDrag.end==="from"?"from":"to";const other=field==="from"?"to":"from";if(hit.id!==nav[other]){setModel(m=>({...m,transitions:m.transitions.map(n=>n.id===navDrag.navId?{...n,[field]:hit.id}:n)}));}}}setNavDrag(null);return;}if(drag&&didDrag.current)setModel(m=>m);setDrag(null);setPanning(false);};
   const onWheel=useCallback(e=>{e.preventDefault();if(e.ctrlKey||e.metaKey){const r=svgRef.current.getBoundingClientRect();const mx=(e.clientX-r.left),my=(e.clientY-r.top);const d=e.deltaY>0?0.92:1.08;setZoom(z=>{const nz=Math.min(ZOOM_MAX,Math.max(ZOOM_MIN,z*d));const wx=mx/z+pan.x,wy=my/z+pan.y;setPan({x:wx-mx/nz,y:wy-my/nz});return nz;});}else{setPan(p=>({x:p.x+e.deltaX/zoom,y:p.y+e.deltaY/zoom}));}},[zoom,pan]);
 
   useEffect(()=>{const onKey=e=>{if(e.key==='Escape'){setMultiSel(new Set());multiOffsets.current={};setConnDrag(null);}};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);},[]);
-  useEffect(()=>{if(selNavId&&!screens.transitions.find(n=>n.id===selNavId)){setSelNavId(null);setEditLabel(false);}},[screens.transitions,selNavId]);
+  useEffect(()=>{if(selNavId&&!model.transitions.find(n=>n.id===selNavId)){setSelNavId(null);setEditLabel(false);}},[model.transitions,selNavId]);
   useEffect(()=>{onSelChange?.(selId,selNavId);},[selId,selNavId]);
 
   const isViewDimmed=vw=>filterActorId&&!vwActorIds(vw).includes(filterActorId);
@@ -140,7 +140,7 @@ function MapView({screens,setScreens,setScreensSilent,onSelectScreen,onSelChange
   return(
     <div style={{display:"flex",flexDirection:"column",height:"100%",position:"relative"}}>
       <div style={{background:M3.surface,display:"flex",alignItems:"stretch",flexShrink:0,paddingLeft:16,minHeight:48,boxShadow:"var(--md-sys-elevation-1)",position:"relative",zIndex:1}}>
-        {[{id:null,name:"All"},...CONCEPT.actors].map(a=>{const isAct=filterActorId===a.id;const cnt=a.id===null?screens.views.length:screens.views.filter(s=>vwActorIds(s).includes(a.id)).length;return<button key={a.id||"__all"} onClick={()=>{setFilterActorId(a.id);setSelNavId(null);setEditLabel(false);}} style={{padding:"0 20px",border:"none",background:"transparent",cursor:"pointer",color:isAct?"#1A73E8":"#9AA0A6",fontSize:14,fontWeight:isAct?500:400,borderBottom:`3px solid ${isAct?"#1A73E8":"transparent"}`,borderTop:"3px solid transparent",fontFamily:"inherit",whiteSpace:"nowrap"}}>{a.name}{cnt>0&&<span style={{marginLeft:6,display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:20,height:20,padding:"0 6px",borderRadius:"var(--md-sys-shape-full)",background:isAct?"#D3E3FD":"#E8EAED",color:isAct?"#041E49":"#5F6368",fontSize:11,fontWeight:600,lineHeight:1}}>{cnt}</span>}</button>;})}
+        {[{id:null,name:"All"},...CONCEPT.actors].map(a=>{const isAct=filterActorId===a.id;const cnt=a.id===null?model.views.length:model.views.filter(s=>vwActorIds(s).includes(a.id)).length;return<button key={a.id||"__all"} onClick={()=>{setFilterActorId(a.id);setSelNavId(null);setEditLabel(false);}} style={{padding:"0 20px",border:"none",background:"transparent",cursor:"pointer",color:isAct?"#1A73E8":"#9AA0A6",fontSize:14,fontWeight:isAct?500:400,borderBottom:`3px solid ${isAct?"#1A73E8":"transparent"}`,borderTop:"3px solid transparent",fontFamily:"inherit",whiteSpace:"nowrap"}}>{a.name}{cnt>0&&<span style={{marginLeft:6,display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:20,height:20,padding:"0 6px",borderRadius:"var(--md-sys-shape-full)",background:isAct?"#D3E3FD":"#E8EAED",color:isAct?"#041E49":"#5F6368",fontSize:11,fontWeight:600,lineHeight:1}}>{cnt}</span>}</button>;})}
       </div>
       <div style={{flex:1,display:"flex",overflow:"hidden"}}>
         <div style={{flex:1,position:"relative",overflow:"hidden"}}>
@@ -153,7 +153,7 @@ function MapView({screens,setScreens,setScreensSilent,onSelectScreen,onSelChange
             {/* 2. ナビ線 */}
             {visNav.map(nav=>{const src=findNode(nav.from),tgt=findNode(nav.to);if(!src||!tgt)return null;const fromScr=visVw.find(s=>s.id===nav.from),toScr=visVw.find(s=>s.id===nav.to);const navDimmed=(fromScr&&isViewDimmed(fromScr))||(toScr&&isViewDimmed(toScr));const fp=edgePt(src.x,src.y,SW,src.h,tgt.x+SW/2,tgt.y+tgt.h/2),tp=edgePt(tgt.x,tgt.y,SW,tgt.h,src.x+SW/2,src.y+src.h/2),isSel=selNavId===nav.id,col=navDimmed?"#E0E0E0":isSel?"#1A73E8":"#9AA0A6";return(<g key={`nl-${nav.id}`} onClick={e=>{e.stopPropagation();setMultiSel(new Set());multiOffsets.current={};setSelNavId(isSel?null:nav.id);setSelId(null);setEditLabel(false);}}><line x1={fp.x} y1={fp.y} x2={tp.x} y2={tp.y} stroke="transparent" strokeWidth={12} style={{cursor:"pointer"}}/><line x1={fp.x} y1={fp.y} x2={tp.x} y2={tp.y} stroke={col} strokeWidth={isSel?2:1.5} markerEnd={navDimmed?"url(#sarr-dim)":isSel?"url(#sarr-hi)":"url(#sarr)"} style={{cursor:"pointer"}}/>{isSel&&!navDrag&&<><circle cx={fp.x} cy={fp.y} r={6} fill="white" stroke="#1A73E8" strokeWidth={2} onMouseDown={e=>onHandleMD(e,nav.id,"from")} style={{cursor:"grab"}}/><circle cx={tp.x} cy={tp.y} r={6} fill="white" stroke="#1A73E8" strokeWidth={2} onMouseDown={e=>onHandleMD(e,nav.id,"to")} style={{cursor:"grab"}}/></>}</g>);})}
             {/* 2.5. ドラッグ中のプレビュー線 */}
-            {navDrag&&(()=>{const nav=screens.transitions.find(n=>n.id===navDrag.navId);if(!nav)return null;const src=findNode(nav.from),tgt=findNode(nav.to);if(!src||!tgt)return null;const fp2=navDrag.end==="from"?{x:navDrag.mx,y:navDrag.my}:edgePt(src.x,src.y,SW,src.h,navDrag.mx,navDrag.my),tp2=navDrag.end==="to"?{x:navDrag.mx,y:navDrag.my}:edgePt(tgt.x,tgt.y,SW,tgt.h,navDrag.mx,navDrag.my);return<line x1={fp2.x} y1={fp2.y} x2={tp2.x} y2={tp2.y} stroke="#1A73E8" strokeWidth={2} strokeDasharray="4 4" opacity={0.6}/>;})()}
+            {navDrag&&(()=>{const nav=model.transitions.find(n=>n.id===navDrag.navId);if(!nav)return null;const src=findNode(nav.from),tgt=findNode(nav.to);if(!src||!tgt)return null;const fp2=navDrag.end==="from"?{x:navDrag.mx,y:navDrag.my}:edgePt(src.x,src.y,SW,src.h,navDrag.mx,navDrag.my),tp2=navDrag.end==="to"?{x:navDrag.mx,y:navDrag.my}:edgePt(tgt.x,tgt.y,SW,tgt.h,navDrag.mx,navDrag.my);return<line x1={fp2.x} y1={fp2.y} x2={tp2.x} y2={tp2.y} stroke="#1A73E8" strokeWidth={2} strokeDasharray="4 4" opacity={0.6}/>;})()}
             {connDrag&&connHasSrc&&(()=>{const src=findNode(conn);if(!src)return null;const fp=edgePt(src.x,src.y,SW,src.h,connDrag.mx,connDrag.my);return<line x1={fp.x} y1={fp.y} x2={connDrag.mx} y2={connDrag.my} stroke="#1A73E8" strokeWidth={2} strokeDasharray="6 3" opacity={0.7}/>;})()}
             {/* 3. ナビラベル（最前面） */}
             {visNav.map(nav=>{const src=findNode(nav.from),tgt=findNode(nav.to);if(!src||!tgt)return null;const fromScr2=visVw.find(s=>s.id===nav.from),toScr2=visVw.find(s=>s.id===nav.to);const lblDimmed=(fromScr2&&isViewDimmed(fromScr2))||(toScr2&&isViewDimmed(toScr2));const fp=edgePt(src.x,src.y,SW,src.h,tgt.x+SW/2,tgt.y+tgt.h/2),tp=edgePt(tgt.x,tgt.y,SW,tgt.h,src.x+SW/2,src.y+src.h/2),mx=(fp.x+tp.x)/2,my=(fp.y+tp.y)/2,isSel=selNavId===nav.id,lblCol=lblDimmed?"#E0E0E0":isSel?"#1A73E8":"#9AA0A6";const isEditing=isSel&&editLabel&&!lblDimmed;if(isEditing){const iw=Math.max(labelWidth(nav.trigger),80);return<foreignObject key={`nb-${nav.id}`} x={mx-iw/2} y={my-11} width={iw} height={22}><input value={nav.trigger} placeholder="trigger" onChange={e=>updNav({...nav,trigger:e.target.value})} autoFocus onClick={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} onBlur={()=>setEditLabel(false)} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();setEditLabel(false);}}} style={{width:"100%",height:"100%",border:"1px solid #1A73E8",borderRadius:10,background:"white",fontSize:11,textAlign:"center",outline:"none",padding:"0 6px",boxSizing:"border-box",fontFamily:"inherit"}}/></foreignObject>;}const lw=labelWidth(nav.trigger);return(<g key={`nb-${nav.id}`} style={{cursor:"pointer"}} onClick={e=>{e.stopPropagation();if(isSel){setEditLabel(true);}else{setSelNavId(nav.id);setSelId(null);setEditLabel(false);}}}><rect x={mx-lw/2} y={my-10} width={lw} height={19} rx={10} fill={lblDimmed?"#F5F5F5":isSel?"#1A73E8":"white"} stroke={lblCol} strokeWidth="0.5"/><text x={mx} y={my+4} fontSize={11} fill={lblDimmed?"#DADCE0":isSel?"white":"#5F6368"} textAnchor="middle" style={{pointerEvents:"none"}}>{nav.trigger}</text></g>);})}
@@ -171,7 +171,7 @@ function MapView({screens,setScreens,setScreensSilent,onSelectScreen,onSelChange
             <button onClick={()=>{const r=svgRef.current?.getBoundingClientRect();if(!r)return;const cx=r.width/2,cy=r.height/2;setZoom(z=>{const nz=Math.min(ZOOM_MAX,z*1.25);const wx=cx/z+pan.x,wy=cy/z+pan.y;setPan({x:wx-cx/nz,y:wy-cy/nz});return nz;});}} style={{width:28,height:28,border:"none",background:"transparent",cursor:"pointer",fontSize:16,color:"#5F6368",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}} onMouseEnter={e=>{e.target.style.background="#F5F5F5";}} onMouseLeave={e=>{e.target.style.background="transparent";}}>+</button>
           </div>
         </div>
-        {(()=>{if(!selVw||multiSel.size>0)return null;const vw=selVw;const upd=patch=>setScreens(m=>({...m,views:m.views.map(s=>s.id===selId?{...s,...patch}:s)}));const del=()=>{setSelId(null);setScreens(m=>({...m,views:m.views.filter(s=>s.id!==selId),transitions:m.transitions.filter(n=>n.from!==selId&&n.to!==selId)}));};const objs=vw.objects||[];return(
+        {(()=>{if(!selVw||multiSel.size>0)return null;const vw=selVw;const upd=patch=>setModel(m=>({...m,views:m.views.map(s=>s.id===selId?{...s,...patch}:s)}));const del=()=>{setSelId(null);setModel(m=>({...m,views:m.views.filter(s=>s.id!==selId),transitions:m.transitions.filter(n=>n.from!==selId&&n.to!==selId)}));};const objs=vw.objects||[];return(
           <div style={{width:400,borderLeft:`1px solid ${M3.outlineVar}`,background:M3.surfaceContLow,display:"flex",flexDirection:"column",flexShrink:0}}>
             <div style={{padding:"16px 16px",borderBottom:`1px solid ${M3.outlineVar}`,display:"flex",alignItems:"center",justifyContent:"space-between",background:M3.surface}}><span style={{fontSize:12,fontWeight:500,color:M3.onSurfaceVar,textTransform:"uppercase",letterSpacing:"0.5px"}}>View</span><button onClick={()=>setSelId(null)} style={{background:"none",border:"none",cursor:"pointer",color:M3.onSurfaceVar}}><span className="msi" style={{fontSize:20}}>close</span></button></div>
             <div style={{flex:1,overflowY:"auto",padding:16}}>
@@ -185,19 +185,19 @@ function MapView({screens,setScreens,setScreensSilent,onSelectScreen,onSelChange
             <div style={{borderTop:`1px solid ${M3.outlineVar}`,padding:16,display:"flex",justifyContent:"flex-end"}}><Btn danger onClick={del}>Delete view</Btn></div>
           </div>);})()}
       </div>
-      <WarningBadge screens={screens}/>
+      <WarningBadge model={model}/>
     </div>
   );
 }
 
 const PH_ROWS=[[72,55,80],[64,80,58],[80,62,70]];
 
-function ViewDetailView({screenId,screens,setScreens,initialActorId,onBack}){
+function ViewDetailView({screenId,model,setModel,initialActorId,onBack}){
   const[selObjId,setSelObjId]=useState(null);
   const[isNewObj,setIsNewObj]=useState(false);
   const selectObj=useCallback(id=>{setSelObjId(id);setIsNewObj(false);},[]);
-  const vw=screens.views.find(s=>s.id===screenId);if(!vw)return null;
-  const updVw=patch=>setScreens(m=>({...m,views:m.views.map(s=>s.id===screenId?{...s,...patch}:s)}));
+  const vw=model.views.find(s=>s.id===screenId);if(!vw)return null;
+  const updVw=patch=>setModel(m=>({...m,views:m.views.map(s=>s.id===screenId?{...s,...patch}:s)}));
   const updObj=obj=>updVw({objects:vw.objects.map(o=>o.id===obj.id?obj:o)});
   const delObj=id=>{updVw({objects:vw.objects.filter(o=>o.id!==id)});selectObj(null);};
   useEffect(()=>{const onKey=e=>{if((e.key==='Delete'||e.key==='Backspace')&&selObjId&&!['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)){e.preventDefault();delObj(selObjId);}};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);},[selObjId,vw?.objects]);
@@ -280,7 +280,7 @@ function SingleWF({obj,crud,color}){const ops=crud||[];const actions=[];if(ops.i
 const TABS=[{id:"map",label:"Map"},{id:"detail",label:"View"}];
 
 function App(){
-  const{data:screens,setData:setScreens,setDataSilent:setScreensSilent,undo,redo,reset:resetHistory,histRef,dirtyRef}=useHistory(EMPTY,showToast);
+  const{data:model,setData:setModel,setDataSilent:setModelSilent,undo,redo,reset:resetHistory,histRef,dirtyRef}=useHistory(EMPTY,showToast);
   const[view,setView]=useState("map"),[vwId,setVwId]=useState(null),[detailActorId,setDetailActorId]=useState(null);
   // マップビューからの選択状態参照用
   const selRef=useRef({vwId:null,navId:null});
@@ -291,59 +291,59 @@ function App(){
     if(view!=="map")return false;
     const{vwId,navId}=selRef.current;
     if(navId){
-      const nav=screens.transitions.find(n=>n.id===navId);
+      const nav=model.transitions.find(n=>n.id===navId);
       if(!nav)return false;
-      setScreens(m=>({...m,transitions:m.transitions.filter(n=>n.id!==navId)}));
+      setModel(m=>({...m,transitions:m.transitions.filter(n=>n.id!==navId)}));
       showToast('Deleted transition');
       return true;
     }
     if(!vwId)return false;
-    const vw=screens.views.find(s=>s.id===vwId);
+    const vw=model.views.find(s=>s.id===vwId);
     if(!vw)return false;
-    setScreens(m=>({...m,views:m.views.filter(s=>s.id!==vwId),transitions:m.transitions.filter(t=>t.from!==vwId&&t.to!==vwId)}));
+    setModel(m=>({...m,views:m.views.filter(s=>s.id!==vwId),transitions:m.transitions.filter(t=>t.from!==vwId&&t.to!==vwId)}));
     showToast('Deleted: '+vw.name);
     return true;
-  },[view,screens,setScreens]);
+  },[view,model,setModel]);
 
   const handleCopy=useCallback(()=>{
     const{vwId}=selRef.current;
     if(view!=="map"||!vwId)return false;
-    const vw=screens.views.find(s=>s.id===vwId);
+    const vw=model.views.find(s=>s.id===vwId);
     if(!vw)return false;
     clipRef.current={type:'view',data:JSON.parse(JSON.stringify(vw))};
     showToast('Copied: '+vw.name);
     return true;
-  },[view,screens]);
+  },[view,model]);
 
   const handlePaste=useCallback(()=>{
     if(!clipRef.current||clipRef.current.type!=='view')return false;
     const src=clipRef.current.data;
-    const names=screens.views.map(s=>s.name);
+    const names=model.views.map(s=>s.name);
     const newId=uid();
     const pasteActorIds=src.actorIds||(src.actorId?[src.actorId]:[]);
     const newVw={...JSON.parse(JSON.stringify(src)),id:newId,name:uniqueName(src.name,names),actorIds:pasteActorIds,actorId:undefined,x:(src.x||80)+40,y:(src.y||80)+40,objects:src.objects.map(o=>({...o,id:uid()}))};
-    setScreens(m=>({...m,views:[...m.views,newVw]}));
+    setModel(m=>({...m,views:[...m.views,newVw]}));
     showToast('Pasted: '+newVw.name);
     return true;
-  },[screens,setScreens]);
+  },[model,setModel]);
 
   const handleCut=useCallback(()=>{
     const{vwId}=selRef.current;
     if(view!=="map"||!vwId)return false;
-    const vw=screens.views.find(s=>s.id===vwId);
+    const vw=model.views.find(s=>s.id===vwId);
     if(!vw)return false;
     clipRef.current={type:'view',data:JSON.parse(JSON.stringify(vw))};
-    setScreens(m=>({...m,views:m.views.filter(s=>s.id!==vwId),transitions:m.transitions.filter(t=>t.from!==vwId&&t.to!==vwId)}));
+    setModel(m=>({...m,views:m.views.filter(s=>s.id!==vwId),transitions:m.transitions.filter(t=>t.from!==vwId&&t.to!==vwId)}));
     showToast('Cut: '+vw.name);
     return true;
-  },[view,screens,setScreens]);
+  },[view,model,setModel]);
 
   useEffect(()=>{
     window.__vwUndo=undo;window.__vwRedo=redo;window.__vwDelete=handleDelete;window.__vwCopy=handleCopy;window.__vwPaste=handlePaste;window.__vwCut=handleCut;
     return()=>{window.__vwUndo=window.__vwRedo=window.__vwDelete=window.__vwCopy=window.__vwPaste=window.__vwCut=null;};
   },[undo,redo,handleDelete,handleCopy,handlePaste,handleCut]);
 
-  useEffect(()=>{dataRef=screens;if(dirtyRef.current){dirtyRef.current=false;markModified();}},[screens]);
+  useEffect(()=>{dataRef=model;if(dirtyRef.current){dirtyRef.current=false;markModified();}},[model]);
   useEffect(()=>{
     window.__vwLoadData=d=>{
       const scData=_ensureViewPositions(splitData(d),CONCEPT.actors,{cols:SC_GRID_COLS,gapX:SC_GRID_GAP_X,gapY:SC_GRID_GAP_Y,padX:SC_GRID_PAD_X,padY:SC_GRID_PAD_Y,minSpanFactor:SC_MIN_SPAN_FACTOR,minSpanMin:SC_MIN_SPAN_MIN});
@@ -360,7 +360,7 @@ function App(){
     ['vw-edited','vw-connect-btn','vw-auto-btn'].forEach(id=>{const el=document.getElementById(id);if(el)barRef.current.appendChild(el);});
   },[]);
 
-  const counts={views:screens.views.length,transitions:screens.transitions.length};
+  const counts={views:model.views.length,transitions:model.transitions.length};
   return(
     <div style={{height:"100vh",display:"flex",flexDirection:"column",background:M3.surface,fontFamily:"'Google Sans','Roboto','Noto Sans JP',system-ui,sans-serif",fontSize:14}}>
       <div style={{height:56,background:"#FFFFFF",display:"flex",alignItems:"stretch",flexShrink:0,paddingLeft:16,boxShadow:"var(--md-sys-elevation-1)",position:"relative",zIndex:1}}>
@@ -368,8 +368,8 @@ function App(){
         <div ref={barRef} style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:16,paddingRight:16,fontSize:14,fontFamily:"inherit"}}/>
       </div>
       <div style={{flex:1,overflow:"hidden"}}>
-        {view==="map"&&<MapView screens={screens} setScreens={setScreens} setScreensSilent={setScreensSilent} initialActorId={detailActorId} onSelectScreen={(id,actorId)=>{setVwId(id);setDetailActorId(actorId);setView("detail");}} onSelChange={setSelRef}/>}
-        {view==="detail"&&vwId&&<ViewDetailView screenId={vwId} screens={screens} setScreens={setScreens} initialActorId={detailActorId} onBack={(actorId)=>{setDetailActorId(actorId);setView("map");setVwId(null);}}/>}
+        {view==="map"&&<MapView model={model} setModel={setModel} setModelSilent={setModelSilent} initialActorId={detailActorId} onSelectScreen={(id,actorId)=>{setVwId(id);setDetailActorId(actorId);setView("detail");}} onSelChange={setSelRef}/>}
+        {view==="detail"&&vwId&&<ViewDetailView screenId={vwId} model={model} setModel={setModel} initialActorId={detailActorId} onBack={(actorId)=>{setDetailActorId(actorId);setView("map");setVwId(null);}}/>}
       </div>
     </div>
   );
