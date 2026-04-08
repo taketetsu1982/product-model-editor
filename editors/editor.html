@@ -113,6 +113,12 @@ const loadGenRef={current:0};
 
 /* ===== ObjectView ===== */
 function ObjectView({model,setModel,setModelSilent,selId,setSelId,selRelId,setSelRelId}){
+  const[actorFilterId,setActorFilterId]=useState(null);
+  const[showActorEdit,setShowActorEdit]=useState(false);
+  const actorFilter=actorFilterId?model.actors.find(a=>a.id===actorFilterId):null;
+  const isObjTouched=id=>!actorFilter||(actorFilter.objectIds||[]).includes(id);
+  const toggleActorObj=id=>{if(!actorFilter)return;const cur=actorFilter.objectIds||[];const next=cur.includes(id)?cur.filter(x=>x!==id):[...cur,id];setModel(m=>({...m,actors:m.actors.map(a=>a.id===actorFilterId?{...a,objectIds:next}:a)}));};
+  const handleActorEditSave=(newList)=>{setModel(m=>({...m,actors:newList}));if(actorFilterId&&!newList.find(a=>a.id===actorFilterId))setActorFilterId(null);setShowActorEdit(false);};
   const[drag,setDrag]=useState(null),[conn,setConn]=useState(null),[connDrag,setConnDrag]=useState(null),[relDrag,setRelDrag]=useState(null),[editLabel,setEditLabel]=useState(false);
   const[multiSel,setMultiSel]=useState(new Set());
   const{svgRef,pan,setPan}=useInitialPan(model.objects,EW,EH,loadGenRef);
@@ -136,8 +142,15 @@ function ObjectView({model,setModel,setModelSilent,selId,setSelId,selRelId,setSe
   const updRelField=(entId,relId,k,v)=>setModel(m=>({...m,objects:m.objects.map(e=>e.id===entId?{...e,relations:e.relations.map(r=>r.id===relId?{...r,[k]:v}:r)}:e)}));
   const addObj=()=>{const id=uid();setModel(m=>{const names=m.objects.map(e=>e.name);return{...m,objects:[...m.objects,{id,name:uniqueName("New Object",names),x:120/zoom+pan.x,y:120/zoom+pan.y,relations:[]}]};});setSelId(id);};
   const connOn=conn!==null,connHasSrc=conn!==null&&conn!=="";
+  // アクターフィルタ時のクリック: オブジェクトのアクセスをトグル
+  const onActorBoxClick=(e,id)=>{if(actorFilter&&conn===null){e.stopPropagation();toggleActorObj(id);}};
   return(
-    <div style={{display:"flex",height:"100%",position:"relative"}}>
+    <div style={{display:"flex",flexDirection:"column",height:"100%",position:"relative"}}>
+      {/* アクターサブタブ */}
+      <div style={{background:M3.surface,display:"flex",alignItems:"stretch",flexShrink:0,paddingLeft:16,minHeight:48,boxShadow:"var(--md-sys-elevation-1)",position:"relative",zIndex:1}}>
+        {[{id:null,name:"All"},...model.actors].map(a=>{const isAct=actorFilterId===a.id;const cnt=a.id===null?model.objects.length:model.objects.filter(o=>(model.actors.find(ac=>ac.id===a.id)?.objectIds||[]).includes(o.id)).length;return<button key={a.id||"__all"} onClick={()=>{setActorFilterId(a.id);}} style={{padding:"0 20px",border:"none",background:"transparent",cursor:"pointer",color:isAct?"#1A73E8":"#9AA0A6",fontSize:14,fontWeight:isAct?500:400,borderBottom:`3px solid ${isAct?"#1A73E8":"transparent"}`,borderTop:"3px solid transparent",fontFamily:"inherit",whiteSpace:"nowrap"}}>{a.name}{cnt>0&&<span style={{marginLeft:6,display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:20,height:20,padding:"0 6px",borderRadius:"var(--md-sys-shape-full)",background:isAct?"#D3E3FD":"#E8EAED",color:isAct?"#041E49":"#5F6368",fontSize:11,fontWeight:600,lineHeight:1}}>{cnt}</span>}</button>;})}
+        <div style={{marginLeft:"auto",display:"flex",alignItems:"center",paddingRight:16,gap:8}}><Btn small ghost onClick={()=>setShowActorEdit(true)}>Edit</Btn></div>
+      </div>
       <div style={{flex:1,position:"relative",overflow:"hidden"}}>
         <svg ref={svgRef} width="100%" height="100%" style={{cursor:connDrag?"grabbing":relDrag?"grabbing":drag?"grabbing":panning?"grabbing":connOn?"crosshair":"grab",display:"block",userSelect:connDrag||relDrag||drag||panning?"none":"auto"}} onMouseMove={onMM} onMouseUp={onUp} onMouseLeave={onUp} onWheel={onWheel} onClick={e=>{if(e.target===e.currentTarget||e.target.getAttribute('data-bg')){if(!connOn){setSelId(null);setSelRelId(null);setEditLabel(false);setMultiSel(new Set());multiOffsets.current={};}}}}>
           <defs>
@@ -153,7 +166,7 @@ function ObjectView({model,setModel,setModelSilent,selId,setSelId,selRelId,setSe
           </defs>
           <rect width="100%" height="100%" fill="url(#dotpat)" data-bg="1" onMouseDown={onBgMD}/>
           <g transform={`scale(${zoom}) translate(${-pan.x},${-pan.y})`}>
-          {ents.map(ent=>{const p=objPalette(ents,ent.id),isSel=selId===ent.id||multiSel.has(ent.id),isCS=conn===ent.id,isEditable=selId===ent.id&&multiSel.size===0;return<g key={ent.id} transform={`translate(${ent.x},${ent.y})`} onMouseDown={e=>onBoxMD(e,ent.id)} style={{cursor:connOn?"pointer":"grab"}}><rect x={1} y={2} width={EW} height={EH} rx={14} fill="rgba(0,0,0,0.04)"/><rect width={EW} height={EH} rx={14} fill={p.bg} stroke={isSel||isCS?p.fg:"transparent"} strokeWidth={isSel||isCS?2.5:0}/><foreignObject x={0} y={0} width={EW} height={EH}><div style={{width:EW,height:EH,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px 16px",boxSizing:"border-box",fontSize:16,fontWeight:600,color:p.fg,textAlign:"center",wordBreak:"break-word",lineHeight:"20px",overflow:"hidden"}}>{isEditable?<input value={ent.name} onChange={e=>upd({...ent,name:e.target.value})} autoFocus onClick={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} style={{width:"100%",border:"none",background:"transparent",outline:"none",fontSize:16,fontWeight:600,color:p.fg,textAlign:"center",fontFamily:"inherit",padding:0}}/>:ent.name}</div></foreignObject></g>;})}
+          {ents.map(ent=>{const p=objPalette(ents,ent.id),isSel=selId===ent.id||multiSel.has(ent.id),isCS=conn===ent.id,isEditable=selId===ent.id&&multiSel.size===0&&!actorFilter,touched=isObjTouched(ent.id),fillBg=touched?p.bg:"#F5F5F5",fillFg=touched?p.fg:"#C4C7C5";return<g key={ent.id} transform={`translate(${ent.x},${ent.y})`} onMouseDown={e=>onBoxMD(e,ent.id)} onClick={e=>onActorBoxClick(e,ent.id)} style={{cursor:actorFilter?"pointer":connOn?"pointer":"grab"}}><rect x={1} y={2} width={EW} height={EH} rx={14} fill="rgba(0,0,0,0.04)"/><rect width={EW} height={EH} rx={14} fill={fillBg} stroke={isSel||isCS?fillFg:"transparent"} strokeWidth={isSel||isCS?2.5:0} opacity={touched?1:0.6}/><foreignObject x={0} y={0} width={EW} height={EH}><div style={{width:EW,height:EH,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px 16px",boxSizing:"border-box",fontSize:16,fontWeight:touched?600:400,color:fillFg,textAlign:"center",wordBreak:"break-word",lineHeight:"20px",overflow:"hidden"}}>{isEditable?<input value={ent.name} onChange={e=>upd({...ent,name:e.target.value})} autoFocus onClick={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} style={{width:"100%",border:"none",background:"transparent",outline:"none",fontSize:16,fontWeight:600,color:fillFg,textAlign:"center",fontFamily:"inherit",padding:0}}/>:ent.name}</div></foreignObject></g>;})}
           {ents.flatMap(ent=>ent.relations.map((rel,ri)=>{const tgt=ents.find(e=>e.id===rel.targetId);if(!tgt)return null;const isRelSel=selRelId&&selRelId.entId===ent.id&&selRelId.relId===rel.id;const hi=isRelSel,col=hi?"#1A73E8":"#9AA0A6",hs=hi?"-hi":"";const rtype=rel.type||"has-many";const endMk=rtype==="has-many"?`url(#m-hm${hs})`:rtype==="has-one"?`url(#m-ho${hs})`:`url(#m-mm${hs})`;const startMk=rtype==="many-to-many"?`url(#m-mm-s${hs})`:"";if(tgt.id===ent.id){const lx=ent.x+EW-SELF_REF_X,ty=ent.y+SELF_REF_Y;const selfD=`M${lx},${ty} C${lx+SELF_REF_CP},${ty-14} ${lx+SELF_REF_CP},${ty+28} ${lx},${ty+20}`;return<g key={`l-${ent.id}-${ri}`} onClick={e=>onRelClick(e,ent.id,rel.id)} style={{cursor:"pointer"}}><path d={selfD} fill="none" stroke="transparent" strokeWidth={12}/><path d={selfD} fill="none" stroke={col} strokeWidth={isRelSel?2.5:1.5} markerEnd={endMk}/></g>;}const fp=edgePt(ent.x,ent.y,EW,EH,tgt.x+EW/2,tgt.y+EH/2),tp=edgePt(tgt.x,tgt.y,EW,EH,ent.x+EW/2,ent.y+EH/2);return<g key={`l-${ent.id}-${ri}`} onClick={e=>onRelClick(e,ent.id,rel.id)} style={{cursor:"pointer"}}><line x1={fp.x} y1={fp.y} x2={tp.x} y2={tp.y} stroke="transparent" strokeWidth={12}/><line x1={fp.x} y1={fp.y} x2={tp.x} y2={tp.y} stroke={col} strokeWidth={isRelSel?2.5:hi?2:1.5} markerEnd={endMk} markerStart={startMk}/>{isRelSel&&!relDrag&&<><circle cx={fp.x} cy={fp.y} r={6} fill="white" stroke="#1A73E8" strokeWidth={2} onMouseDown={e=>onHandleMD(e,ent.id,rel.id,"source")} style={{cursor:"grab"}}/><circle cx={tp.x} cy={tp.y} r={6} fill="white" stroke="#1A73E8" strokeWidth={2} onMouseDown={e=>onHandleMD(e,ent.id,rel.id,"target")} style={{cursor:"grab"}}/></>}</g>;}))}
           {relDrag&&(()=>{const owner=ents.find(e=>e.id===relDrag.entId),rel=owner?.relations.find(r=>r.id===relDrag.relId);if(!owner||!rel)return null;const tgt=ents.find(e=>e.id===rel.targetId);if(!tgt)return null;const fp2=relDrag.end==="source"?{x:relDrag.mx,y:relDrag.my}:edgePt(owner.x,owner.y,EW,EH,relDrag.mx,relDrag.my),tp2=relDrag.end==="target"?{x:relDrag.mx,y:relDrag.my}:edgePt(tgt.x,tgt.y,EW,EH,relDrag.mx,relDrag.my);return<line x1={fp2.x} y1={fp2.y} x2={tp2.x} y2={tp2.y} stroke="#1A73E8" strokeWidth={2} strokeDasharray="4 4" opacity={0.6}/>;})()}
           {connDrag&&connHasSrc&&(()=>{const src=ents.find(e=>e.id===conn);if(!src)return null;const fp=edgePt(src.x,src.y,EW,EH,connDrag.mx,connDrag.my);return<line x1={fp.x} y1={fp.y} x2={connDrag.mx} y2={connDrag.my} stroke="#1A73E8" strokeWidth={2} strokeDasharray="6 3" opacity={0.7}/>;})()}
@@ -244,35 +257,12 @@ function MapView({model,setModel,setModelSilent,onSelChange}){
             <div style={{borderTop:`1px solid ${M3.outlineVar}`,padding:16,display:"flex",justifyContent:"flex-end"}}><Btn danger onClick={del}>Delete view</Btn></div>
           </div>);})()}
       </div>
+      {showActorEdit&&<ActorEditModal actors={model.actors} onSave={handleActorEditSave} onClose={()=>setShowActorEdit(false)}/>}
     </div>
   );
 }
 
-/* ===== ActorView ===== */
-function ActorView({model,setModel}){
-  const[selActorId,setSelActorId]=useState(model.actors[0]?.id||null);
-  const[showEdit,setShowEdit]=useState(false);
-  const actor=model.actors.find(a=>a.id===selActorId);
-  const toggleObj=(objId)=>{if(!actor)return;const cur=actor.objectIds||[];const next=cur.includes(objId)?cur.filter(x=>x!==objId):[...cur,objId];setModel(m=>({...m,actors:m.actors.map(a=>a.id===selActorId?{...a,objectIds:next}:a)}));};
-  const handleEditSave=(newList)=>{setModel(m=>({...m,actors:newList}));if(!newList.find(a=>a.id===selActorId))setSelActorId(newList[0]?.id||null);setShowEdit(false);};
-  if(model.actors.length===0)return(<div style={{display:"flex",height:"100%",flexDirection:"column"}}><div style={{background:M3.surface,display:"flex",alignItems:"center",flexShrink:0,minHeight:56,paddingLeft:16,boxShadow:"var(--md-sys-elevation-1)",position:"relative",zIndex:1}}><div style={{marginLeft:"auto",display:"flex",alignItems:"center",paddingRight:16,gap:8}}><Btn small ghost onClick={()=>setShowEdit(true)}>Edit</Btn></div></div><div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:M3.outline,fontSize:14}}>No actors yet</div>{showEdit&&<ActorEditModal actors={model.actors} onSave={handleEditSave} onClose={()=>setShowEdit(false)}/>}</div>);
-  return(
-    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-      <div style={{background:M3.surface,display:"flex",alignItems:"stretch",flexShrink:0,paddingLeft:16,minHeight:56,boxShadow:"var(--md-sys-elevation-1)",position:"relative",zIndex:1}}>
-        {model.actors.map(a=>{const isAct=selActorId===a.id;return<button key={a.id} onClick={()=>setSelActorId(a.id)} style={{padding:"0 24px",border:"none",background:"transparent",cursor:"pointer",color:isAct?"#1A73E8":"#9AA0A6",fontSize:14,fontWeight:isAct?500:400,borderBottom:`3px solid ${isAct?"#1A73E8":"transparent"}`,borderTop:"3px solid transparent",fontFamily:"inherit",whiteSpace:"nowrap"}}>{a.name}</button>;})}
-        <div style={{marginLeft:"auto",display:"flex",alignItems:"center",paddingRight:16,gap:8}}><Btn small ghost onClick={()=>setShowEdit(true)}>Edit</Btn></div>
-      </div>
-      <div style={{flex:1,padding:24,overflowY:"auto"}}>
-        <div style={{fontSize:12,fontWeight:500,color:M3.onSurfaceVar,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:16}}>Objects accessible by {actor?.name}</div>
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {model.objects.map(obj=>{const p=objPalette(model.objects,obj.id);const on=(actor?.objectIds||[]).includes(obj.id);return<button key={obj.id} onClick={()=>toggleObj(obj.id)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:on?p.bg:"#F5F5F5",border:"none",borderRadius:12,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}><div style={{width:24,height:24,borderRadius:6,border:on?"none":"2px solid #DADCE0",background:on?p.fg:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{on&&<span style={{color:"white",fontSize:12,fontWeight:700}}>✓</span>}</div><span style={{fontSize:14,fontWeight:on?600:400,color:on?p.fg:"#C4C7C5"}}>{obj.name}</span></button>;})}
-        </div>
-      </div>
-      {showEdit&&<ActorEditModal actors={model.actors} onSave={handleEditSave} onClose={()=>setShowEdit(false)}/>}
-    </div>
-  );
-}
-
+/* ===== ActorEditModal ===== */
 function ActorEditModal({actors,onSave,onClose}){
   const[list,setList]=useState(()=>actors.map(a=>({...a})));
   const[confirmDel,setConfirmDel]=useState(null);
@@ -297,7 +287,7 @@ function ActorEditModal({actors,onSave,onClose}){
 }
 
 /* ===== 統合App ===== */
-const TABS=[{id:"object",label:"Object"},{id:"actor",label:"Actor"},{id:"view",label:"View"}];
+const TABS=[{id:"object",label:"Object"},{id:"view",label:"View"}];
 
 function App(){
   const{data:model,setData:setModel,setDataSilent:setModelSilent,undo,redo,reset:resetHistory,histRef,dirtyRef}=useHistory(EMPTY,showToast);
@@ -453,7 +443,7 @@ function App(){
     });
   },[]);
 
-  const counts={object:model.objects.length,actor:model.actors.length,view:model.views.length};
+  const counts={object:model.objects.length,view:model.views.length};
 
   return(
     <div style={{height:"100vh",display:"flex",flexDirection:"column",background:M3.surface,fontFamily:"'Google Sans','Roboto','Noto Sans JP',system-ui,sans-serif",fontSize:14}}>
@@ -470,7 +460,7 @@ function App(){
       </div>
       <div style={{flex:1,overflow:"hidden"}}>
         {tab==="object"&&<ObjectView model={model} setModel={setModel} setModelSilent={setModelSilent} selId={objSelId} setSelId={setObjSelId} selRelId={selRelId} setSelRelId={setSelRelId}/>}
-        {tab==="actor"&&<ActorView model={model} setModel={setModel}/>}
+
         {tab==="view"&&<MapView model={model} setModel={setModel} setModelSilent={setModelSilent} onSelChange={setMapSelRef}/>}
       </div>
     </div>
