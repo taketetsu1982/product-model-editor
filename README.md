@@ -98,8 +98,8 @@ claude --plugin-dir /path/to/product-model-editor
 
 | スキル | 説明 |
 |---|---|
-| `/model-editor:generate-model` | PRD等からプロダクトモデルJSON一括生成 |
-| `/model-editor:open-editor` | HTMLエディタをブラウザで開いて編集 |
+| `/generate-model` | PRD等からプロダクトモデルJSON一括生成 |
+| `/open-editor` | HTMLエディタをブラウザで開いて編集 |
 
 ## ライセンス
 
