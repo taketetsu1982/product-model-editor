@@ -1,9 +1,9 @@
 ---
-name: generate-model
+name: model
 description: PRD・MRD等からプロダクトモデルJSON（objects, views, transitions）を一括生成する
 ---
 
-# /generate-model
+# /model
 
 PRD・MRD等の入力からプロダクトモデルJSON（objects, views, transitions）を一括生成する。
 
@@ -115,5 +115,5 @@ PRD・MRD等の入力を読み、以下を生成する:
 Product Model generated:
 - JSON: {EDITOR_DIR}/product-model.json
 
-エディタで確認・編集する場合は /open-editor を実行してください。
+エディタで確認・編集する場合は /editor を実行してください。
 ```
