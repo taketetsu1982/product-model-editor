@@ -1,4 +1,4 @@
-# Product Model Editor
+# Model Editor
 
 OOUIに基づくプロダクトモデルエディタ。オブジェクト（データモデル）とビュー（画面設計）を1つのJSONで統合管理し、ブラウザ上で視覚的に編集できる。
 
