@@ -74,8 +74,8 @@ editors/
 sample/
 └── product-model.json       # サンプルデータ
 skills/
-├── generate-model/SKILL.md  # /generate-model スキル定義
-└── open-editor/SKILL.md     # /open-editor スキル定義
+├── model/SKILL.md           # /model スキル定義
+└── editor/SKILL.md          # /editor スキル定義
 ```
 
 > テストファイル（`*.test.js`）は各ロジックファイルに並置。
@@ -93,15 +93,15 @@ npx vitest run
 ### ローカルテスト
 
 ```bash
-claude --plugin-dir /path/to/product-model-editor
+claude --plugin-dir /path/to/model-editor
 ```
 
 ### スキル
 
 | スキル | 説明 |
 |---|---|
-| `/generate-model` | PRD等からプロダクトモデルJSON一括生成 |
-| `/open-editor` | HTMLエディタをブラウザで開いて編集 |
+| `/model` | PRD等からプロダクトモデルJSON一括生成 |
+| `/editor` | HTMLエディタをブラウザで開いて編集 |
 
 ## ライセンス
 
