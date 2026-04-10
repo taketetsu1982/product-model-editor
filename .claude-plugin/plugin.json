@@ -1,6 +1,6 @@
 {
   "name": "model-editor",
-  "description": "OOUIに基づくプロダクトモデルエディタ。オブジェクトとビューを1つのJSONで統合管理し、ブラウザ上で視覚的に編集できる。",
+  "description": "OOUIに基づくモデルエディタ。企画情報からオブジェクトとビューを1つのJSONに生成し、ブラウザ上で視覚的に編集できる。",
   "version": "0.9.6",
   "author": {
     "name": "taketetsu1982"
