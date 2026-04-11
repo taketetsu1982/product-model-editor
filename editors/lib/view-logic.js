@@ -2,6 +2,7 @@
 (function(exports) {
 
   var SORT_LAST = Infinity;
+  var TYPE_ORDER_OTHER = 2;
   // メイン/サブ間の追加ギャップ（gapYの倍率）
   var SUB_GAP_FACTOR = 0.6;
 
@@ -94,8 +95,8 @@
     var typeOrder = { collection: 0, single: 1 };
     groupOrder.forEach(function(oid) {
       groups[oid].sort(function(a, b) {
-        var oa = typeOrder[a.type] !== undefined ? typeOrder[a.type] : 2;
-        var ob = typeOrder[b.type] !== undefined ? typeOrder[b.type] : 2;
+        var oa = typeOrder[a.type] !== undefined ? typeOrder[a.type] : TYPE_ORDER_OTHER;
+        var ob = typeOrder[b.type] !== undefined ? typeOrder[b.type] : TYPE_ORDER_OTHER;
         return oa - ob;
       });
     });
@@ -131,23 +132,22 @@
     var result = groupAndSortPanes(views, objects, depth);
     var subGap = Math.round(gapY * SUB_GAP_FACTOR);
 
-    // 全列のメインPane最大数を算出（サブPaneの開始Y座標を揃えるため）
+    // splitMainSubの結果をキャッシュ
+    var splits = {};
     var maxMainCount = 0;
     result.groupOrder.forEach(function(oid) {
-      var split = splitMainSub(result.groups[oid]);
-      if (split.main.length > maxMainCount) maxMainCount = split.main.length;
+      splits[oid] = splitMainSub(result.groups[oid]);
+      if (splits[oid].main.length > maxMainCount) maxMainCount = splits[oid].main.length;
     });
 
     // 列ごとに配置（メイン → ギャップ → サブ）
+    var subStartY = padY + maxMainCount * gapY + subGap;
     result.groupOrder.forEach(function(oid, col) {
-      var split = splitMainSub(result.groups[oid]);
-      // メインPaneを上に配置
+      var split = splits[oid];
       split.main.forEach(function(vw, row) {
         vw.x = padX + col * gapX;
         vw.y = padY + row * gapY;
       });
-      // サブPaneをギャップを空けて下に配置（全列で開始Y座標を揃える）
-      var subStartY = padY + maxMainCount * gapY + subGap;
       split.sub.forEach(function(vw, row) {
         vw.x = padX + col * gapX;
         vw.y = subStartY + row * gapY;
