@@ -113,7 +113,7 @@ function ensureViewPositions(data){return _ensureViewPositions(data,{cols:VW_GRI
 const loadGenRef={current:0};
 
 /* ===== ObjectView ===== */
-function ObjectView({model,setModel,setModelSilent,selId,setSelId,selRelId,setSelRelId}){
+function ObjectView({model,setModel,setModelSilent,selId,setSelId,selRelId,setSelRelId,savedViewState,onViewStateChange}){
   const[actorFilterId,setActorFilterId]=useState(null);
   const[showActorEdit,setShowActorEdit]=useState(false);
   const actorFilter=actorFilterId?model.actors.find(a=>a.id===actorFilterId):null;
@@ -124,7 +124,14 @@ function ObjectView({model,setModel,setModelSilent,selId,setSelId,selRelId,setSe
   const[multiSel,setMultiSel]=useState(new Set());
   const{svgRef,pan,setPan}=useInitialPan(model.objects,EW,EH,loadGenRef);
   const[panning,setPanning]=useState(false);
-  const[zoom,setZoom]=useState(1);
+  const[zoom,setZoom]=useState(savedViewState?.zoom||1);
+  // 保存されたpanがあれば復元
+  useEffect(()=>{if(savedViewState?.pan)setPan(savedViewState.pan);},[]);
+  // アンマウント時にzoom/panを保存
+  useEffect(()=>()=>{if(onViewStateChange)onViewStateChange({zoom:zoomRef.current,pan:panRef.current});},[]);
+  const zoomRef=useRef(savedViewState?.zoom||1),panRef=useRef(savedViewState?.pan||{x:0,y:0});
+  useEffect(()=>{zoomRef.current=zoom;},[zoom]);
+  useEffect(()=>{panRef.current=pan;},[pan]);
   const dOff=useRef({x:0,y:0}),panStart=useRef({x:0,y:0,px:0,py:0}),multiOffsets=useRef({});
   const ents=model.objects,selObj=ents.find(e=>e.id===selId);
   const selRelOwner=selRelId?ents.find(e=>e.id===selRelId.entId):null;
@@ -187,12 +194,17 @@ function ObjectView({model,setModel,setModelSilent,selId,setSelId,selRelId,setSe
 }
 
 /* ===== MapView ===== */
-function MapView({model,setModel,setModelSilent,onSelChange}){
+function MapView({model,setModel,setModelSilent,onSelChange,savedViewState,onViewStateChange}){
   const[selNavId,setSelNavId]=useState(null),[selId,setSelId]=useState(null),[drag,setDrag]=useState(null),[conn,setConn]=useState(null),[connDrag,setConnDrag]=useState(null),[navDrag,setNavDrag]=useState(null),[editLabel,setEditLabel]=useState(false);
   const[multiSel,setMultiSel]=useState(new Set());
   const selVw=selId?model.views.find(s=>s.id===selId):null;
   const{svgRef,pan,setPan}=useInitialPan(model.views,SW,SH,loadGenRef);
-  const[panning,setPanning]=useState(false),[zoom,setZoom]=useState(1);
+  const[panning,setPanning]=useState(false),[zoom,setZoom]=useState(savedViewState?.zoom||1);
+  useEffect(()=>{if(savedViewState?.pan)setPan(savedViewState.pan);},[]);
+  useEffect(()=>()=>{if(onViewStateChange)onViewStateChange({zoom:zoomRef.current,pan:panRef.current});},[]);
+  const zoomRef=useRef(savedViewState?.zoom||1),panRef=useRef(savedViewState?.pan||{x:0,y:0});
+  useEffect(()=>{zoomRef.current=zoom;},[zoom]);
+  useEffect(()=>{panRef.current=pan;},[pan]);
   const dOff=useRef({x:0,y:0}),panStart=useRef({x:0,y:0,px:0,py:0}),didDrag=useRef(false),multiOffsets=useRef({});
   const visVw=model.views;
   // ビューノードの検索（高さ計算: fields + verbs）
@@ -292,6 +304,8 @@ const TABS=[{id:"object",label:"Object"},{id:"view",label:"View"}];
 function App(){
   const{data:model,setData:setModel,setDataSilent:setModelSilent,undo,redo,reset:resetHistory,histRef,dirtyRef}=useHistory(EMPTY,showToast);
   const[tab,setTab]=useState("object");
+  // タブごとのzoom/pan状態を保持
+  const tabViewState=useRef({object:{zoom:null,pan:null},view:{zoom:null,pan:null}});
   const[objSelId,setObjSelId]=useState(null);
   const[selRelId,setSelRelId]=useState(null);
   const clipRef=useRef(null);
@@ -458,9 +472,9 @@ function App(){
         <div ref={barRef} style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:12,paddingRight:16,fontSize:14,fontFamily:"inherit"}}/>
       </div>
       <div style={{flex:1,overflow:"hidden"}}>
-        {tab==="object"&&<ObjectView model={model} setModel={setModel} setModelSilent={setModelSilent} selId={objSelId} setSelId={setObjSelId} selRelId={selRelId} setSelRelId={setSelRelId}/>}
+        {tab==="object"&&<ObjectView model={model} setModel={setModel} setModelSilent={setModelSilent} selId={objSelId} setSelId={setObjSelId} selRelId={selRelId} setSelRelId={setSelRelId} savedViewState={tabViewState.current.object} onViewStateChange={s=>{tabViewState.current.object=s;}}/>}
 
-        {tab==="view"&&<MapView model={model} setModel={setModel} setModelSilent={setModelSilent} onSelChange={setMapSelRef}/>}
+        {tab==="view"&&<MapView model={model} setModel={setModel} setModelSilent={setModelSilent} onSelChange={setMapSelRef} savedViewState={tabViewState.current.view} onViewStateChange={s=>{tabViewState.current.view=s;}}/>}
       </div>
     </div>
   );
