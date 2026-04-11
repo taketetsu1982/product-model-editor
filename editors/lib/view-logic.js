@@ -3,8 +3,17 @@
 
   var SORT_LAST = Infinity;
   var TYPE_ORDER_OTHER = 2;
-  // メイン/サブ間の追加ギャップ（gapYの倍率）
-  var SUB_GAP_FACTOR = 0.6;
+  // Paneの高さ計算に使う定数
+  var HEADER_H = 36;
+  var ROW_H = 22;
+
+  // Paneの高さを計算（fields + verbsの数に基づく）
+  function calcPaneHeight(vw) {
+    var fields = (vw.fields || []).length;
+    var verbs = (vw.verbs || []).length;
+    var hasContent = fields > 0 || verbs > 0;
+    return HEADER_H + (hasContent ? 8 : 40) + fields * ROW_H + (verbs > 0 ? verbs * ROW_H + 8 : 0) + 8;
+  }
 
   // objectsのリレーション階層深さを計算（BFS）
   function computeObjectDepths(objects) {
@@ -46,43 +55,33 @@
     return depth;
   }
 
-  // Paneをメイン（最初のcollection + 最初のsingle）とサブに分離
-  function splitMainSub(panes) {
-    var main = [];
-    var sub = [];
-    var hasCollection = false;
-    var hasSingle = false;
-    panes.forEach(function(vw) {
-      if (vw.type === 'collection' && !hasCollection) {
-        hasCollection = true;
-        main.push(vw);
-      } else if (vw.type === 'single' && !hasSingle) {
-        hasSingle = true;
-        main.push(vw);
-      } else {
-        sub.push(vw);
-      }
-    });
-    return { main: main, sub: sub };
-  }
-
-  // Paneをobjectの階層深さ順にグルーピング・ソート
-  function groupAndSortPanes(views, objects, depth) {
+  // Paneをobjectの階層深さ順にグルーピング
+  function groupPanesByObject(views, objects, depth) {
     var groups = {};
-    var groupOrder = [];
+    var allOids = [];
     views.forEach(function(vw) {
       var oid = vw.objectId || "__none";
       if (!groups[oid]) {
         groups[oid] = [];
-        groupOrder.push(oid);
+        allOids.push(oid);
       }
       groups[oid].push(vw);
     });
 
-    // グループをobjectの階層深さ順でソート（同じ深さはobjects配列の出現順）
+    // 各グループ内でcollection → single → その他の順にソート
+    var typeOrder = { collection: 0, single: 1 };
+    allOids.forEach(function(oid) {
+      groups[oid].sort(function(a, b) {
+        var oa = typeOrder[a.type] !== undefined ? typeOrder[a.type] : TYPE_ORDER_OTHER;
+        var ob = typeOrder[b.type] !== undefined ? typeOrder[b.type] : TYPE_ORDER_OTHER;
+        return oa - ob;
+      });
+    });
+
+    // objectIdを階層深さ順 → objects配列の出現順でソート
     var objIndex = {};
     objects.forEach(function(obj, i) { objIndex[obj.id] = i; });
-    groupOrder.sort(function(a, b) {
+    allOids.sort(function(a, b) {
       var da = depth[a] !== undefined ? depth[a] : SORT_LAST;
       var db = depth[b] !== undefined ? depth[b] : SORT_LAST;
       if (da !== db) return da - db;
@@ -91,20 +90,10 @@
       return ia - ib;
     });
 
-    // 各グループ内でcollection → single → その他の順にソート
-    var typeOrder = { collection: 0, single: 1 };
-    groupOrder.forEach(function(oid) {
-      groups[oid].sort(function(a, b) {
-        var oa = typeOrder[a.type] !== undefined ? typeOrder[a.type] : TYPE_ORDER_OTHER;
-        var ob = typeOrder[b.type] !== undefined ? typeOrder[b.type] : TYPE_ORDER_OTHER;
-        return oa - ob;
-      });
-    });
-
-    return { groups: groups, groupOrder: groupOrder };
+    return { groups: groups, sortedOids: allOids };
   }
 
-  // Pane自動配置（オブジェクトグループ × 階層順 + メイン/サブ分離）
+  // Pane自動配置（階層行 × collection+single横並び + 可変高さ対応）
   exports.ensureViewPositions = function(data, config) {
     if (!data || !data.views) return data;
     var views = data.views;
@@ -112,13 +101,13 @@
 
     var gapX = config.gapX, gapY = config.gapY;
     var padX = config.padX, padY = config.padY;
+    var paneW = config.paneW || 240;
 
     // 座標未設定のPaneがあるか判定
     var needsLayout = views.some(function(vw) {
       return vw.x === undefined || vw.y === undefined;
     });
     if (!needsLayout) {
-      // 既存の密集判定: すべて座標設定済みでも密集していたら再配置
       var xs = views.map(function(s) { return s.x; });
       var ys = views.map(function(s) { return s.y; });
       var rangeX = Math.max.apply(null, xs) - Math.min.apply(null, xs);
@@ -129,35 +118,86 @@
 
     var objects = data.objects || [];
     var depth = computeObjectDepths(objects);
-    var result = groupAndSortPanes(views, objects, depth);
-    var subGap = Math.round(gapY * SUB_GAP_FACTOR);
+    var result = groupPanesByObject(views, objects, depth);
 
-    // splitMainSubの結果をキャッシュ
-    var splits = {};
-    var maxMainCount = 0;
-    result.groupOrder.forEach(function(oid) {
-      splits[oid] = splitMainSub(result.groups[oid]);
-      if (splits[oid].main.length > maxMainCount) maxMainCount = splits[oid].main.length;
+    // 階層深さごとにobjectIdをグルーピング
+    var depthRows = {};
+    result.sortedOids.forEach(function(oid) {
+      var d = depth[oid] !== undefined ? depth[oid] : 0;
+      if (!depthRows[d]) depthRows[d] = [];
+      depthRows[d].push(oid);
     });
+    var depthKeys = Object.keys(depthRows).map(Number).sort(function(a, b) { return a - b; });
 
-    // 列ごとに配置（メイン → ギャップ → サブ）
-    var subStartY = padY + maxMainCount * gapY + subGap;
-    result.groupOrder.forEach(function(oid, col) {
-      var split = splits[oid];
-      split.main.forEach(function(vw, row) {
-        vw.x = padX + col * gapX;
-        vw.y = padY + row * gapY;
+    // collection+singleの横並び幅（Pane幅 + Pane間の小ギャップ）
+    var pairGap = Math.round(gapX * 0.3);
+
+    // 行ごとに配置
+    var currentY = padY;
+    depthKeys.forEach(function(d) {
+      var oids = depthRows[d];
+      var currentX = padX;
+      var rowMaxH = 0;
+
+      oids.forEach(function(oid, oidIdx) {
+        var panes = result.groups[oid];
+        // メイン: 最初のcollection + 最初のsingle（横並び）
+        // サブ: 残り（メインの下に縦積み）
+        var mainPanes = [];
+        var subPanes = [];
+        var hasCollection = false, hasSingle = false;
+        panes.forEach(function(vw) {
+          if (vw.type === 'collection' && !hasCollection) {
+            hasCollection = true;
+            mainPanes.push(vw);
+          } else if (vw.type === 'single' && !hasSingle) {
+            hasSingle = true;
+            mainPanes.push(vw);
+          } else {
+            subPanes.push(vw);
+          }
+        });
+
+        // メインPaneを横並びに配置
+        var groupStartX = currentX;
+        var mainMaxH = 0;
+        mainPanes.forEach(function(vw, i) {
+          vw.x = groupStartX + i * (paneW + pairGap);
+          vw.y = currentY;
+          var h = calcPaneHeight(vw);
+          if (h > mainMaxH) mainMaxH = h;
+        });
+
+        // メインの横幅を計算
+        var mainWidth = mainPanes.length > 0
+          ? mainPanes.length * paneW + (mainPanes.length - 1) * pairGap
+          : paneW;
+
+        // サブPaneをメインの下に縦積み
+        var subY = currentY + mainMaxH + gapY;
+        var totalH = mainMaxH;
+        subPanes.forEach(function(vw) {
+          vw.x = groupStartX;
+          vw.y = subY;
+          var h = calcPaneHeight(vw);
+          subY += h + gapY;
+          totalH = subY - currentY - gapY;
+        });
+
+        if (totalH > rowMaxH) rowMaxH = totalH;
+
+        // 次のobjectグループのX位置
+        currentX += mainWidth + gapX;
       });
-      split.sub.forEach(function(vw, row) {
-        vw.x = padX + col * gapX;
-        vw.y = subStartY + row * gapY;
-      });
+
+      // 次の行のY位置（この行の最大高さ + ギャップ）
+      currentY += rowMaxH + gapY;
     });
 
     return data;
   };
 
   // テスト用にエクスポート
-  exports._splitMainSub = splitMainSub;
+  exports._calcPaneHeight = calcPaneHeight;
 
 })(typeof module !== 'undefined' ? module.exports : (window.__editorLib = window.__editorLib || {}));
