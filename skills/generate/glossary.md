@@ -1,9 +1,8 @@
 # Glossary
 
-Terms based on OOUI (Object-Oriented User Interface) methodology.
-
 | Term | Definition |
 |---|---|
+| OOUI | Object-Oriented User Interface. A UI design methodology where users interact with domain Objects (nouns) rather than navigating function menus (verbs). The interaction follows a "noun → verb" paradigm: select an Object first, then choose an Action to perform on it. |
 | Object | A domain entity that users perceive and act on. Has multiple instances sharing common properties and actions. The "noun" in the noun-verb interaction paradigm. |
 | Property (Field) | An attribute of an Object displayed in a Pane (e.g., name, status, date). Stored as `fields` in JSON. |
 | Action (Verb) | An operation performed on an Object (e.g., create, edit, delete). Stored as `verbs` in JSON. Actions are always placed on a Pane, never as standalone menu items. |
