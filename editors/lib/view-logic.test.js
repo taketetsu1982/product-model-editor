@@ -19,14 +19,14 @@ describe('ensureViewPositions', () => {
     expect(ensureViewPositions(data, DEFAULT_CONFIG)).toBe(data);
   });
 
-  it('1つのペインでは再配置しない', () => {
+  it('1つのPaneでは再配置しない', () => {
     const data = { views: [{ id: 'v1', x: 10, y: 20 }] };
     ensureViewPositions(data, DEFAULT_CONFIG);
     expect(data.views[0].x).toBe(10);
     expect(data.views[0].y).toBe(20);
   });
 
-  it('十分に散らばっているペインは再配置しない', () => {
+  it('十分に散らばっているPaneは再配置しない', () => {
     const data = {
       objects: [],
       views: [
@@ -39,7 +39,7 @@ describe('ensureViewPositions', () => {
     expect(data.views[1]).toMatchObject({ x: 500, y: 500 });
   });
 
-  it('同じobjectIdのペインを縦に並べる', () => {
+  it('同じobjectIdのPaneを縦に並べる', () => {
     const data = {
       objects: [{ id: 'task', name: 'Task', relations: [] }],
       views: [
@@ -87,7 +87,7 @@ describe('ensureViewPositions', () => {
     expect(data.views[0].y).toBeLessThan(data.views[2].y);
   });
 
-  it('座標未設定のペインがあれば再配置する', () => {
+  it('座標未設定のPaneがあれば再配置する', () => {
     const data = {
       objects: [{ id: 'a', name: 'A', relations: [] }],
       views: [

@@ -1,8 +1,8 @@
 // editors/lib/view-logic.js — View Editor固有の純粋関数
 (function(exports) {
 
-  // ペイン自動配置（オブジェクトグループ × 階層順）
-  // objectsのリレーション階層順に列を決め、同じobjectIdのペインを縦に並べる
+  // Pane自動配置（オブジェクトグループ × 階層順）
+  // objectsのリレーション階層順に列を決め、同じobjectIdのPaneを縦に並べる
   exports.ensureViewPositions = function(data, config) {
     if (!data || !data.views) return data;
     var views = data.views;
@@ -11,7 +11,7 @@
     var gapX = config.gapX, gapY = config.gapY;
     var padX = config.padX, padY = config.padY;
 
-    // 座標未設定のペインがあるか判定
+    // 座標未設定のPaneがあるか判定
     var needsLayout = views.some(function(vw) {
       return vw.x === undefined || vw.y === undefined;
     });
@@ -64,7 +64,7 @@
       if (depth[obj.id] === undefined) depth[obj.id] = 0;
     });
 
-    // objectIdでペインをグルーピング
+    // objectIdでPaneをグルーピング
     var groups = {};
     var groupOrder = [];
     views.forEach(function(vw) {
