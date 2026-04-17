@@ -1,11 +1,11 @@
 ---
 name: generate
-description: PRD・MRD等の入力からプロダクトモデルJSON（objects, actors, views, transitions）を一括生成する
+description: PRD・MRD等の入力からプロダクトモデルJSON（objects, views, transitions）を一括生成する
 ---
 
 # /generate
 
-PRD・MRD等の入力からプロダクトモデルJSON（objects, actors, views, transitions）を一括生成する。
+PRD・MRD等の入力からプロダクトモデルJSON（objects, views, transitions）を一括生成する。
 オブジェクト抽出にはOOUI（オブジェクト指向UI）モデリング手法を用いる。
 入力がタスク記述（「〇〇する」「〇〇を行う」）で書かれていても、そこから対象物（名詞）を浮かび上がらせ、オブジェクトベースのモデルに変換する。
 
@@ -104,17 +104,13 @@ Pane間の遷移を定義する:
 - 親オブジェクトのsingleから、子オブジェクトのcollectionへの遷移（例: 企業詳細 → 所属メンバー一覧）
 - 遷移の trigger には、ユーザーの具体的な操作を記述する（「行をクリック」「＋ボタン」等）
 
-### Step 6: アクターを定義する
+既存JSONがある場合は、Step 2〜5 を通じて既存の内容をベースに差分更新する。
 
-ロール別のアクターを定義し、アクセス可能なオブジェクトを割り当てる。
-
-既存JSONがある場合は、Step 2〜6 を通じて既存の内容をベースに差分更新する。
-
-### Step 7: JSONファイルを書き出す
+### Step 6: JSONファイルを書き出す
 
 `{EDITOR_DIR}/product-model.json` にJSONを書き出す。
 
-### Step 8: 完了メッセージ
+### Step 7: 完了メッセージ
 
 ```
 Product Model generated:

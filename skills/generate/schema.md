@@ -3,7 +3,6 @@
 ```json
 {
   "objects": [],
-  "actors": [],
   "views": [],
   "transitions": []
 }
@@ -12,7 +11,6 @@
 | フィールド | 説明 |
 |---|---|
 | objects | Object定義 |
-| actors | Actor定義（ロール別のアクセス可能Object） |
 | views | Pane定義（type: "collection" / "single"） |
 | transitions | Pane間の遷移定義 |
 
@@ -32,19 +30,6 @@
 - relationsの `type` は `has-many` / `has-one` / `many-to-many`
 - **リレーションは一方向のみ定義する。** A→Bのhas-manyを定義したら、B→Aのhas-oneは定義しない。双方向に定義すると同じObject間に2本の線が描画されてしまう
 - 方向の基準: 親（所有する側）→ 子（所有される側）の方向で定義する
-
-## actors
-
-```json
-{
-  "id": "kebab-case識別子",
-  "name": "アクター名",
-  "objectIds": ["アクセス可能なobject id"]
-}
-```
-
-- プロダクトを利用するロール（Owner, Member等）を定義
-- `objectIds` でそのActorがアクセスできるObjectを指定
 
 ## views（Pane）
 
