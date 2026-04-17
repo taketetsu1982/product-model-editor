@@ -60,13 +60,13 @@
 Pane間の関係をグラフの辺として定義する。PaneがどうScreenにまとめられるかとは独立している。
 
 ```json
-{ "id": "一意ID", "from": "Pane id", "to": "Pane id", "type": "drilldown | embed", "trigger": "遷移トリガー" }
+{ "id": "一意ID", "from": "Pane id", "to": "Pane id", "type": "drilldown | embed", "param": "受け渡しパラメータ" }
 ```
 
 - `type`: 辺の種類
   - `drilldown`: 有向辺（矢印）。ユーザー操作で別Paneに遷移する。例: Collection → Single
   - `embed`: 無向辺（線）。上位ObjectのSingleが下位ObjectのCollectionを内包する親子関係を表す
-- `trigger`: drilldownの場合に遷移トリガーを記述する。embedでは省略可
+- `param`: drilldownの場合に遷移先へ渡すパラメータを日本語で記述する（例: 「プロジェクトID」）。embedでは省略可
 - Pane間の遷移はPane Graphの辺に従う（独自遷移を作らない）
 
 ## screens

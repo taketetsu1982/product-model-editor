@@ -114,28 +114,28 @@
       "from": "project-collection",
       "to": "project-single",
       "type": "drilldown",
-      "trigger": "Tap プロジェクト行"
+      "param": "プロジェクトID"
     },
     {
       "id": "d2",
       "from": "task-collection",
       "to": "task-single",
       "type": "drilldown",
-      "trigger": "Tap タスク行"
+      "param": "タスクID"
     },
     {
       "id": "d3",
       "from": "my-task-collection",
       "to": "task-single",
       "type": "drilldown",
-      "trigger": "Tap タスク行"
+      "param": "タスクID"
     },
     {
       "id": "d4",
       "from": "my-task-collection",
       "to": "project-single",
       "type": "drilldown",
-      "trigger": "Tap プロジェクト名"
+      "param": "プロジェクトID"
     },
     {
       "id": "e1",

@@ -102,7 +102,7 @@ Pane間の関係をグラフの辺として定義する。辺には2種類ある
 
 **drilldown（有向辺・矢印）**: ユーザー操作で別Paneに遷移する関係
 - **collection → single** が最も基本的なdrilldown（一覧から1件選んで詳細へ）
-- trigger にはユーザーの具体的な操作を記述する（「行をクリック」「＋ボタン」等）
+- param には遷移先へ渡すパラメータを日本語で記述する（例: 「プロジェクトID」「タスクID」）
 
 **embed（無向辺・線）**: 上位ObjectのSingleが下位ObjectのCollectionを内包する親子関係
 - 例: プロジェクト詳細（Single）— タスク一覧（Collection）
