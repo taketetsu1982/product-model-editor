@@ -76,11 +76,19 @@
       "prompt": "タスクのプロパティ編集フォーム。"
     },
     {
+      "id": "my-task-collection",
+      "type": "collection",
+      "objectId": "task",
+      "fields": ["タスク名", "プロジェクト", "期限", "ステータス"],
+      "verbs": ["作成"],
+      "prompt": "自分にアサインされたタスクを期限順に表示。"
+    },
+    {
       "id": "comment-collection",
       "type": "collection",
       "objectId": "comment",
       "fields": ["投稿者", "本文", "投稿日時"],
-      "verbs": ["投稿"],
+      "verbs": ["投稿", "削除"],
       "prompt": "コメントをスレッド形式で時系列表示。"
     },
     {
@@ -98,14 +106,6 @@
       "fields": ["ラベル名", "色"],
       "verbs": ["作成", "編集", "削除"],
       "prompt": "ラベルの管理。色とテキストを設定。"
-    },
-    {
-      "id": "my-task-collection",
-      "type": "collection",
-      "objectId": "task",
-      "fields": ["タスク名", "プロジェクト", "期限", "ステータス"],
-      "verbs": ["作成"],
-      "prompt": "自分にアサインされたタスクを期限順に表示。"
     }
   ],
   "paneGraph": [
