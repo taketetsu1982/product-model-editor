@@ -345,7 +345,7 @@ function ScreenView({model,setModel,setModelSilent}){
               items.forEach(sc=>{(sc.paneIds||[]).forEach(pid=>{if(!paneToScrs[pid])paneToScrs[pid]=[];paneToScrs[pid].push(sc.id);});});
               // Screen間接続を導出（同一方向ペアの重複排除）
               const seen=new Set();const lines=[];
-              (model.paneGraph||[]).forEach(edge=>{const fromScrs=paneToScrs[edge.from]||[],toScrs=paneToScrs[edge.to]||[];fromScrs.forEach(fid=>{toScrs.forEach(tid=>{if(fid===tid)return;const key=fid+">"+tid;if(seen.has(key))return;seen.add(key);lines.push({fid,tid,key});});});});
+              (model.paneGraph||[]).filter(e=>(e.type||"drilldown")==="drilldown").forEach(edge=>{const fromScrs=paneToScrs[edge.from]||[],toScrs=paneToScrs[edge.to]||[];fromScrs.forEach(fid=>{toScrs.forEach(tid=>{if(fid===tid)return;const key=fid+">"+tid;if(seen.has(key))return;seen.add(key);lines.push({fid,tid,key});});});});
               return lines.map(({fid,tid,key})=>{const sf=items.find(s=>s.id===fid),st=items.find(s=>s.id===tid);if(!sf||!st)return null;const sfSize=scrCardSize(sf,model.views,model.objects),stSize=scrCardSize(st,model.views,model.objects);const f=edgePt(sf.x||0,sf.y||0,sfSize.w,sfSize.h,(st.x||0)+stSize.w/2,(st.y||0)+stSize.h/2),t=edgePt(st.x||0,st.y||0,stSize.w,stSize.h,(sf.x||0)+sfSize.w/2,(sf.y||0)+sfSize.h/2);return<line key={`se-${key}`} x1={f.x} y1={f.y} x2={t.x} y2={t.y} stroke="#9AA0A6" strokeWidth={1.5} markerEnd="url(#scrarr)"/>;});
             })()}
             </g>
