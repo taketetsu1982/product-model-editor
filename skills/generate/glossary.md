@@ -10,5 +10,6 @@
 | Collection | A Pane type that lists multiple instances of the same Object, showing key properties. |
 | Single | A Pane type that displays one Object instance in detail, typically with more properties than a Collection. |
 | View | In this project, the presentation layer as a whole — the set of all Panes. In JSON, `views` is the array containing Pane definitions. Note: OOUI literature uses "view" for individual display units; this project uses "Pane" for that concept instead. |
-| Transition | Navigation from one Pane to another, triggered by a user action (e.g., tapping a row). |
+| Pane Graph | A graph defining relationships between Panes. Has two edge types: `drilldown` (directed, arrow — user navigates to another Pane) and `embed` (undirected, line — a Single Pane contains a child Collection). Independent of how Panes are grouped into Screens. Stored as `paneGraph` in JSON. |
+| Screen | A device-specific grouping of one or more Panes into a single screen. The same logical screen (e.g., "Home") can have different Pane compositions per device (mobile, tablet, desktop). Stored as `screens` in JSON. |
 | Relation | A directional association between Objects (parent → child). Defined only in one direction to avoid duplicate lines. |

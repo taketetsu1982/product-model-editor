@@ -4,7 +4,8 @@
 {
   "objects": [],
   "views": [],
-  "transitions": []
+  "paneGraph": [],
+  "screens": []
 }
 ```
 
@@ -12,7 +13,8 @@
 |---|---|
 | objects | Object定義 |
 | views | Pane定義（type: "collection" / "single"） |
-| transitions | Pane間の遷移定義 |
+| paneGraph | Pane Graph — Pane間の有向辺（遷移）定義 |
+| screens | Screen定義（デバイス別Pane構成） |
 
 ## objects
 
@@ -53,8 +55,31 @@
 - `prompt`: このPane自身の責務のみ記述する。他Paneとの画面構成（サイドパネル等）は書かない
 - `x`, `y` は生成時に省略してよい（エディタが自動配置する）
 
-## transitions
+## paneGraph
+
+Pane間の関係をグラフの辺として定義する。PaneがどうScreenにまとめられるかとは独立している。
 
 ```json
-{ "id": "一意ID", "from": "Pane id", "to": "Pane id", "trigger": "遷移トリガー" }
+{ "id": "一意ID", "from": "Pane id", "to": "Pane id", "type": "drilldown | embed", "trigger": "遷移トリガー" }
 ```
+
+- `type`: 辺の種類
+  - `drilldown`: 有向辺（矢印）。ユーザー操作で別Paneに遷移する。例: Collection → Single
+  - `embed`: 無向辺（線）。上位ObjectのSingleが下位ObjectのCollectionを内包する親子関係を表す
+- `trigger`: drilldownの場合に遷移トリガーを記述する。embedでは省略可
+- Pane間の遷移はPane Graphの辺に従う（独自遷移を作らない）
+
+## screens
+
+```json
+{
+  "id": "kebab-case識別子",
+  "name": "画面名",
+  "device": "mobile | tablet | desktop",
+  "paneIds": ["Pane id"]
+}
+```
+
+- デバイスごとにPaneをグルーピングして1つの画面（Screen）を構成する
+- 同じ名前のScreenを異なるdeviceで定義し、デバイスごとのPane構成の違いを表現する
+- `paneIds` にはviews配列内のPaneのidを指定する
