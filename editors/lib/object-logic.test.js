@@ -14,7 +14,7 @@ describe('ensurePositions', () => {
   });
 
   it('objectsがない場合はそのまま返す', () => {
-    const data = { actors: [] };
+    const data = { views: [] };
     expect(ensurePositions(data, DEFAULT_CONFIG)).toBe(data);
   });
 

@@ -12,4 +12,3 @@
 | View | In this project, the presentation layer as a whole — the set of all Panes. In JSON, `views` is the array containing Pane definitions. Note: OOUI literature uses "view" for individual display units; this project uses "Pane" for that concept instead. |
 | Transition | Navigation from one Pane to another, triggered by a user action (e.g., tapping a row). |
 | Relation | A directional association between Objects (parent → child). Defined only in one direction to avoid duplicate lines. |
-| Actor | A user role (e.g., Admin, Member) that defines which Objects are accessible. |
