@@ -312,7 +312,7 @@ function ScreenView({model,setModel,setModelSilent}){
             {items.map(sc=>{const isSel=selId===sc.id;const sx=sc.x||0,sy=sc.y||0;const panes=(sc.paneIds||[]).map(pid=>model.views.find(v=>v.id===pid)).filter(Boolean);const{w:cardW,h:cardH}=scrCardSize(sc,model.views,model.objects);return(
               <g key={sc.id} transform={`translate(${sx},${sy})`} onMouseDown={e=>onBoxMD(e,sc.id)} style={{cursor:drag?"grabbing":"grab"}}>
                 <rect x={1} y={2} width={cardW} height={cardH} rx={14} fill="rgba(0,0,0,0.04)"/>
-                <rect width={cardW} height={cardH} rx={14} fill="white" stroke={isSel?"#1A73E8":"#E0E0E0"} strokeWidth={isSel?2.5:1.5}/>
+                <rect width={cardW} height={cardH} rx={14} fill="white"/>
                 <clipPath id={`scrclip-${sc.id}`}><rect width={cardW} height={cardH} rx={14}/></clipPath>
                 <g clipPath={`url(#scrclip-${sc.id})`}>
                   <rect width={cardW} height={SCR_HEADER_H} fill={isSel?"#E8F0FE":"#F8F9FA"}/>
@@ -335,6 +335,7 @@ function ScreenView({model,setModel,setModelSilent}){
                   );})}
                   {panes.length===0&&<text x={cardW/2} y={SCR_HEADER_H+24} fontSize={12} fill="#C4C7C5" textAnchor="middle">Paneなし</text>}
                 </g>
+                <rect width={cardW} height={cardH} rx={14} fill="none" stroke={isSel?"#1A73E8":"#E0E0E0"} strokeWidth={isSel?2.5:1.5}/>
               </g>
             );})}
             </g>

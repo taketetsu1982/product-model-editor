@@ -4,42 +4,82 @@
       "id": "workspace",
       "name": "ワークスペース",
       "relations": [
-        { "id": "r1", "targetId": "project", "type": "has-many" },
-        { "id": "r2", "targetId": "member", "type": "has-many" }
-      ]
+        {
+          "id": "r1",
+          "targetId": "project",
+          "type": "has-many"
+        },
+        {
+          "id": "r2",
+          "targetId": "member",
+          "type": "has-many"
+        }
+      ],
+      "x": 80,
+      "y": 80
     },
     {
       "id": "project",
       "name": "プロジェクト",
       "relations": [
-        { "id": "r3", "targetId": "task", "type": "has-many" },
-        { "id": "r4", "targetId": "member", "type": "has-many" }
-      ]
+        {
+          "id": "r3",
+          "targetId": "task",
+          "type": "has-many"
+        },
+        {
+          "id": "r4",
+          "targetId": "member",
+          "type": "has-many"
+        }
+      ],
+      "x": -100,
+      "y": 320
     },
     {
       "id": "member",
       "name": "メンバー",
       "relations": [
-        { "id": "r5", "targetId": "task", "type": "has-many" }
-      ]
+        {
+          "id": "r5",
+          "targetId": "task",
+          "type": "has-many"
+        }
+      ],
+      "x": 260,
+      "y": 320
     },
     {
       "id": "task",
       "name": "タスク",
       "relations": [
-        { "id": "r6", "targetId": "comment", "type": "has-many" },
-        { "id": "r7", "targetId": "label", "type": "has-many" }
-      ]
+        {
+          "id": "r6",
+          "targetId": "comment",
+          "type": "has-many"
+        },
+        {
+          "id": "r7",
+          "targetId": "label",
+          "type": "has-many"
+        }
+      ],
+      "x": 80,
+      "y": 560
     },
     {
       "id": "comment",
       "name": "コメント",
-      "relations": []
+      "relations": [],
+      "x": -100,
+      "y": 800
     },
     {
       "id": "label",
       "name": "ラベル",
-      "relations": []
+      "relations": [],
+      "x": 260,
+      "y": 800
     }
   ],
   "views": [
@@ -47,65 +87,142 @@
       "id": "project-collection",
       "type": "collection",
       "objectId": "project",
-      "fields": ["プロジェクト名", "ステータス", "メンバー数"],
-      "verbs": ["作成"],
-      "prompt": "プロジェクトをカード形式で一覧表示。"
+      "fields": [
+        "プロジェクト名",
+        "ステータス",
+        "メンバー数"
+      ],
+      "verbs": [
+        "作成"
+      ],
+      "prompt": "プロジェクトをカード形式で一覧表示。",
+      "x": 60,
+      "y": 60
     },
     {
       "id": "project-single",
       "type": "single",
       "objectId": "project",
-      "fields": ["プロジェクト名", "説明", "ステータス", "期限"],
-      "verbs": ["編集", "削除"],
-      "prompt": "プロジェクトのプロパティを表示・編集する。"
+      "fields": [
+        "プロジェクト名",
+        "説明",
+        "ステータス",
+        "期限"
+      ],
+      "verbs": [
+        "編集",
+        "削除"
+      ],
+      "prompt": "プロジェクトのプロパティを表示・編集する。",
+      "x": 336,
+      "y": 60
     },
     {
       "id": "task-collection",
       "type": "collection",
       "objectId": "task",
-      "fields": ["タスク名", "担当者", "期限", "ステータス"],
-      "verbs": ["作成", "検索"],
-      "prompt": "タスクをカンバン形式で表示。ドラッグでステータス変更。"
+      "fields": [
+        "タスク名",
+        "担当者",
+        "期限",
+        "ステータス"
+      ],
+      "verbs": [
+        "作成",
+        "検索"
+      ],
+      "prompt": "タスクをカンバン形式で表示。ドラッグでステータス変更。",
+      "x": 60,
+      "y": 332
     },
     {
       "id": "task-single",
       "type": "single",
       "objectId": "task",
-      "fields": ["タスク名", "説明", "担当者", "期限", "ラベル"],
-      "verbs": ["編集", "削除", "アサイン"],
-      "prompt": "タスクのプロパティ編集フォーム。"
+      "fields": [
+        "タスク名",
+        "説明",
+        "担当者",
+        "期限",
+        "ラベル"
+      ],
+      "verbs": [
+        "編集",
+        "削除",
+        "アサイン"
+      ],
+      "prompt": "タスクのプロパティ編集フォーム。",
+      "x": 336,
+      "y": 332
     },
     {
       "id": "my-task-collection",
       "type": "collection",
       "objectId": "task",
-      "fields": ["タスク名", "プロジェクト", "期限", "ステータス"],
-      "verbs": ["作成"],
-      "prompt": "自分にアサインされたタスクを期限順に表示。"
+      "fields": [
+        "タスク名",
+        "プロジェクト",
+        "期限",
+        "ステータス"
+      ],
+      "verbs": [
+        "作成"
+      ],
+      "prompt": "自分にアサインされたタスクを期限順に表示。",
+      "x": 60,
+      "y": 648
     },
     {
       "id": "comment-collection",
       "type": "collection",
       "objectId": "comment",
-      "fields": ["投稿者", "本文", "投稿日時"],
-      "verbs": ["投稿", "削除"],
-      "prompt": "コメントをスレッド形式で時系列表示。"
+      "fields": [
+        "投稿者",
+        "本文",
+        "投稿日時"
+      ],
+      "verbs": [
+        "投稿",
+        "削除"
+      ],
+      "prompt": "コメントをスレッド形式で時系列表示。",
+      "x": 60,
+      "y": 898
     },
     {
       "id": "member-collection",
       "type": "collection",
       "objectId": "member",
-      "fields": ["名前", "メール", "ロール"],
-      "verbs": ["招待", "ロール変更", "削除"],
-      "prompt": "メンバー一覧。招待・ロール変更・削除。"
+      "fields": [
+        "名前",
+        "メール",
+        "ロール"
+      ],
+      "verbs": [
+        "招待",
+        "ロール変更",
+        "削除"
+      ],
+      "prompt": "メンバー一覧。招待・ロール変更・削除。",
+      "x": 696,
+      "y": 60
     },
     {
       "id": "label-collection",
       "type": "collection",
       "objectId": "label",
-      "fields": ["ラベル名", "色"],
-      "verbs": ["作成", "編集", "削除"],
-      "prompt": "ラベルの管理。色とテキストを設定。"
+      "fields": [
+        "ラベル名",
+        "色"
+      ],
+      "verbs": [
+        "作成",
+        "編集",
+        "削除"
+      ],
+      "prompt": "ラベルの管理。色とテキストを設定。",
+      "x": 420,
+      "y": 898
     }
   ],
   "paneGraph": [
@@ -167,49 +284,85 @@
       "id": "home-mobile",
       "name": "ホーム",
       "device": "mobile",
-      "paneIds": ["project-collection"]
+      "paneIds": [
+        "project-collection"
+      ],
+      "x": 166,
+      "y": -4
     },
     {
       "id": "home-desktop",
       "name": "ホーム",
       "device": "desktop",
-      "paneIds": ["project-collection", "member-collection"]
+      "paneIds": [
+        "project-collection",
+        "member-collection"
+      ],
+      "x": 127,
+      "y": -17
     },
     {
       "id": "project-mobile",
       "name": "プロジェクト",
       "device": "mobile",
-      "paneIds": ["project-single"]
+      "paneIds": [
+        "project-single"
+      ],
+      "x": -20,
+      "y": 179
     },
     {
       "id": "project-desktop",
       "name": "プロジェクト",
       "device": "desktop",
-      "paneIds": ["project-single", "task-collection"]
+      "paneIds": [
+        "project-single",
+        "task-collection"
+      ],
+      "x": -140,
+      "y": -221
     },
     {
       "id": "task-mobile",
       "name": "タスク",
       "device": "mobile",
-      "paneIds": ["task-single"]
+      "paneIds": [
+        "task-single"
+      ],
+      "x": -30,
+      "y": -199
     },
     {
       "id": "task-desktop",
       "name": "タスク",
       "device": "desktop",
-      "paneIds": ["task-single", "comment-collection"]
+      "paneIds": [
+        "task-single",
+        "comment-collection"
+      ],
+      "x": -146,
+      "y": 178
     },
     {
       "id": "my-tasks-mobile",
       "name": "マイタスク",
       "device": "mobile",
-      "paneIds": ["my-task-collection"]
+      "paneIds": [
+        "my-task-collection"
+      ],
+      "x": -307,
+      "y": -3
     },
     {
       "id": "my-tasks-desktop",
       "name": "マイタスク",
       "device": "desktop",
-      "paneIds": ["my-task-collection", "task-single"]
+      "paneIds": [
+        "my-task-collection",
+        "task-single"
+      ],
+      "x": -362,
+      "y": -21
     }
   ]
 }
