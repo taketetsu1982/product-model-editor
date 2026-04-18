@@ -103,7 +103,7 @@ io.setupKeyboard();
 </script>
 
 <script type="text/babel">
-const{useState,useRef,useCallback,useEffect}=React;
+const{useState,useRef,useCallback,useEffect,useMemo}=React;
 const{M3,Input,Sel,Btn,SLabel,useInitialPan,useHistory,VariantBar}=window.__editorUI;
 const{OBJ_PALETTE,ZOOM_MIN,ZOOM_MAX,MAX_HISTORY,uid,uniqueName,edgePt,calcCenterPan,labelWidth}=window.__editorLib;
 const{isVariantMode,toVariantMode,getActiveVariant,switchVariant,keepVariant,deleteVariant,renameVariant,getVariantList,updateVariantData}=window.__variantManager;
@@ -515,7 +515,8 @@ function App(){
     }, activeVariant?.id);
   },[setModel,activeVariant]);
 
-  const effectiveSetModel=isVariantMode(model)?setActiveModel:setModel;
+  const inVariantMode=isVariantMode(model);
+  const effectiveSetModel=useMemo(()=>inVariantMode?setActiveModel:setModel,[inVariantMode,setActiveModel,setModel]);
 
   const setActiveModelSilent=useCallback((updater)=>{
     setModelSilent(m=>{
@@ -525,7 +526,7 @@ function App(){
       return updateVariantData(m,active.id,updated);
     });
   },[setModelSilent]);
-  const effectiveSetModelSilent=isVariantMode(model)?setActiveModelSilent:setModelSilent;
+  const effectiveSetModelSilent=useMemo(()=>inVariantMode?setActiveModelSilent:setModelSilent,[inVariantMode,setActiveModelSilent,setModelSilent]);
 
   // Split View状態
   const[splitMode,setSplitMode]=useState(null); // null | { left: variantId, right: variantId }
@@ -703,25 +704,27 @@ function App(){
   },[tab,objSelId,selRelId,model,setModel]);
 
   // Undo/Redoでバリアント自動切替（Splitモード時は閉じる）
+  // useHistoryがfull model（_variants含む）を復元するため、activeフラグも自動で戻る。
+  // Split中に異なるバリアントの操作が復元された場合はSplitを閉じる。
+  // stale closure回避: undoの返すvariantIdと、復元前のactiveを直接比較せず、
+  // splitMode中かつvariantIdが返された場合はsplitModeのleft/rightに含まれるかで判定。
   const handleUndo=useCallback(()=>{
     const targetVid=undo();
-    if(targetVid && isVariantMode(model)){
-      const current=getActiveVariant(model);
-      if(current && current.id!==targetVid){
+    if(targetVid && splitMode){
+      if(splitMode.left!==targetVid && splitMode.right!==targetVid){
         setSplitMode(null);
       }
     }
-  },[undo,model]);
+  },[undo,splitMode]);
 
   const handleRedo=useCallback(()=>{
     const targetVid=redo();
-    if(targetVid && isVariantMode(model)){
-      const current=getActiveVariant(model);
-      if(current && current.id!==targetVid){
+    if(targetVid && splitMode){
+      if(splitMode.left!==targetVid && splitMode.right!==targetVid){
         setSplitMode(null);
       }
     }
-  },[redo,model]);
+  },[redo,splitMode]);
 
   // グローバル関数登録
   useEffect(()=>{
@@ -805,7 +808,7 @@ function App(){
           <div style={{flex:1,overflow:"hidden",borderRight:"2px solid "+M3.outlineVar,position:"relative"}}>
             <div style={{position:"absolute",top:8,right:8,zIndex:10,display:"flex",alignItems:"center",gap:4,background:M3.primaryContainer,color:M3.onPrimaryContainer,padding:"2px 8px",borderRadius:M3.shapeSm,fontSize:11,fontWeight:500}}>
               <select value={splitMode.left} onChange={e=>setSplitMode(s=>({...s,left:e.target.value}))} style={{border:"none",background:"transparent",color:"inherit",fontSize:11,fontWeight:500,fontFamily:"inherit",cursor:"pointer"}}>
-                {variantList.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}
+                {variantList.filter(v=>v.id!==splitMode.right).map(v=><option key={v.id} value={v.id}>{v.name}</option>)}
               </select>
             </div>
             {tab==="object"&&<ObjectView model={getVariantModel(splitMode.left)} setModel={setVariantModel(splitMode.left)} setModelSilent={setVariantModelSilent(splitMode.left)} selId={objSelId} setSelId={setObjSelId} selRelId={selRelId} setSelRelId={setSelRelId} savedViewState={tabViewState.current.object} onViewStateChange={s=>{tabViewState.current.object=s;}}/>}
@@ -816,7 +819,7 @@ function App(){
           <div style={{flex:1,overflow:"hidden",position:"relative"}}>
             <div style={{position:"absolute",top:8,right:8,zIndex:10,display:"flex",alignItems:"center",gap:4,background:M3.surfaceCont,color:M3.onSurface,padding:"2px 8px",borderRadius:M3.shapeSm,fontSize:11,fontWeight:500}}>
               <select value={splitMode.right} onChange={e=>setSplitMode(s=>({...s,right:e.target.value}))} style={{border:"none",background:"transparent",color:"inherit",fontSize:11,fontWeight:500,fontFamily:"inherit",cursor:"pointer"}}>
-                {variantList.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}
+                {variantList.filter(v=>v.id!==splitMode.left).map(v=><option key={v.id} value={v.id}>{v.name}</option>)}
               </select>
             </div>
             {tab==="object"&&<ObjectView model={getVariantModel(splitMode.right)} setModel={setVariantModel(splitMode.right)} setModelSilent={setVariantModelSilent(splitMode.right)} selId={objSelId} setSelId={setObjSelId} selRelId={selRelId} setSelRelId={setSelRelId} savedViewState={tabViewState.current.object} onViewStateChange={s=>{tabViewState.current.object=s;}}/>}

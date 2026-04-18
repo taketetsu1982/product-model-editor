@@ -64,8 +64,8 @@ describe('validateVariants', () => {
     expect(validateVariants({ _variants: 42 })).toBeTruthy();
   });
 
-  it('_variantsが空配列の場合はnullを返す（バリアントなしは有効）', () => {
-    expect(validateVariants({ _variants: [] })).toBe(null);
+  it('_variantsが空配列の場合はエラー文字列を返す', () => {
+    expect(validateVariants({ _variants: [] })).toBeTruthy();
   });
 
   it('variantにidが存在しない場合はエラー文字列を返す', () => {

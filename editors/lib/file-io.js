@@ -18,6 +18,7 @@
     if (!Object.prototype.hasOwnProperty.call(data, '_variants')) return null;
     var variants = data._variants;
     if (!Array.isArray(variants)) return '_variantsは配列である必要があります';
+    if (variants.length === 0) return '_variantsが空です';
     for (var i = 0; i < variants.length; i++) {
       var v = variants[i];
       if (!Object.prototype.hasOwnProperty.call(v, 'id')) {
