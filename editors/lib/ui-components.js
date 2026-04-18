@@ -167,29 +167,27 @@
           })
         );
       }
-      return h("button", {
+      return h("div", {
         key: v.id,
         className: "variant-tab" + (isActive ? " active" : ""),
         onClick: function() { onSwitch(v.id); setMenuId(null); },
         onDoubleClick: function() { startRename(v); }
       },
-        v.name,
-        // アクティブタブに ⋯ を内包（下線がタブ全体に渡る）
+        h("span", null, v.name),
         isActive ? h("span", {
           className: "variant-more-btn",
           onClick: function(e) { e.stopPropagation(); setMenuId(menuId === v.id ? null : v.id); }
         }, "\u22EF") : null,
-        // ⋯ メニュー（ポップオーバー）
         menuId === v.id ? h("div", {
           className: "variant-menu",
           onClick: function(e) { e.stopPropagation(); }
         },
-          h("button", { className: "variant-menu-item", onClick: function() { setMenuId(null); onDuplicate(); } }, "Duplicate"),
-          h("button", { className: "variant-menu-item", onClick: function() { startRename(v); } }, "Rename"),
+          h("div", { className: "variant-menu-item", onClick: function() { setMenuId(null); onDuplicate(); } }, "Duplicate"),
+          h("div", { className: "variant-menu-item", onClick: function() { startRename(v); } }, "Rename"),
           h("div", { className: "variant-menu-divider" }),
-          h("button", { className: "variant-menu-item variant-menu-primary", onClick: function() { setMenuId(null); onKeep(); } }, "Keep"),
+          h("div", { className: "variant-menu-item variant-menu-primary", onClick: function() { setMenuId(null); onKeep(); } }, "Keep"),
           h("div", { className: "variant-menu-divider" }),
-          variants.length > 1 ? h("button", { className: "variant-menu-item variant-menu-danger", onClick: function() { setMenuId(null); onDelete(v.id); } }, "Delete") : null
+          variants.length > 1 ? h("div", { className: "variant-menu-item variant-menu-danger", onClick: function() { setMenuId(null); onDelete(v.id); } }, "Delete") : null
         ) : null
       );
     });
