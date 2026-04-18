@@ -33,6 +33,7 @@
 <script src="./lib/object-logic.js"></script>
 <script src="./lib/view-logic.js"></script>
 <script src="./lib/file-io.js"></script>
+<script src="./lib/variant-manager.js"></script>
 <script src="./lib/ui-components.js"></script>
 
 <script>
@@ -105,6 +106,7 @@ io.setupKeyboard();
 const{useState,useRef,useCallback,useEffect}=React;
 const{M3,Input,Sel,Btn,SLabel,useInitialPan,useHistory}=window.__editorUI;
 const{OBJ_PALETTE,ZOOM_MIN,ZOOM_MAX,MAX_HISTORY,uid,uniqueName,edgePt,calcCenterPan,labelWidth}=window.__editorLib;
+const{isVariantMode,toVariantMode,getActiveVariant,switchVariant,keepVariant,deleteVariant,renameVariant,getVariantList,updateVariantData}=window.__variantManager;
 const{ensurePositions:_ensurePositions,CIRCLED,circled}=window.__editorLib;
 const{ensureViewPositions:_ensureViewPositions}=window.__editorLib;
 const objPalette=(objs,id)=>window.__editorLib.objPalette(objs,id);
@@ -469,6 +471,59 @@ function App(){
   const scrSelRef=useRef(null);
   const setScrSelRef=id=>{scrSelRef.current=id;};
 
+  // --- バリアント管理 ---
+  const variantList=isVariantMode(model)?getVariantList(model):[];
+  const activeVariant=isVariantMode(model)?getActiveVariant(model):null;
+  const activeModel=activeVariant||model;
+
+  const handleDuplicate=useCallback(()=>{
+    setModel(m=>toVariantMode(m));
+    showToast('Duplicated');
+  },[setModel]);
+
+  const handleKeep=useCallback(()=>{
+    if(!activeVariant)return;
+    if(!window.confirm('「'+activeVariant.name+'」を採用し、他のバリアントを削除します。よろしいですか？'))return;
+    setModel(m=>keepVariant(m,activeVariant.id));
+    showToast('Kept: '+activeVariant.name);
+  },[setModel,activeVariant]);
+
+  const handleDeleteVariant=useCallback((variantId)=>{
+    const v=variantList.find(v=>v.id===variantId);
+    if(!window.confirm('「'+(v?.name||variantId)+'」を削除しますか？'))return;
+    setModel(m=>deleteVariant(m,variantId));
+    showToast('Deleted variant');
+  },[setModel,variantList]);
+
+  const handleSwitchVariant=useCallback((variantId)=>{
+    setModel(m=>switchVariant(m,variantId));
+  },[setModel]);
+
+  const handleRenameVariant=useCallback((variantId,newName)=>{
+    setModel(m=>renameVariant(m,variantId,newName));
+  },[setModel]);
+
+  // バリアントモード時のsetModel: アクティブバリアントのデータだけ更新
+  const setActiveModel=useCallback((updater)=>{
+    setModel(m=>{
+      if(!isVariantMode(m))return typeof updater==='function'?updater(m):updater;
+      const active=getActiveVariant(m);
+      const updated=typeof updater==='function'?updater(active):updater;
+      return updateVariantData(m,active.id,updated);
+    });
+  },[setModel]);
+
+  const effectiveSetModel=isVariantMode(model)?setActiveModel:setModel;
+
+  const effectiveSetModelSilent=isVariantMode(model)?
+    (updater)=>{setModelSilent(m=>{
+      if(!isVariantMode(m))return typeof updater==='function'?updater(m):updater;
+      const active=getActiveVariant(m);
+      const updated=typeof updater==='function'?updater(active):updater;
+      return updateVariantData(m,active.id,updated);
+    });}
+    :setModelSilent;
+
   // コピー: objectタブではオブジェクト、viewタブではビューをコピー
   const handleCopy=useCallback(()=>{
     if(tab==='object'){
@@ -626,10 +681,21 @@ function App(){
   useEffect(()=>{
     window.__edLoadData=d=>{
       const loaded=splitData(d);
-      const positioned=ensurePositions(loaded);
-      const viewPositioned=ensureViewPositions(positioned);
-      loadGenRef.current++;
-      resetHistory(viewPositioned);
+      if(!loaded)return;
+      if(loaded._variants){
+        // バリアントモード: 各バリアントに個別に位置計算を適用
+        const processed={...loaded,_variants:loaded._variants.map(v=>{
+          const p=ensurePositions(v);
+          return ensureViewPositions(p);
+        })};
+        loadGenRef.current++;
+        resetHistory(processed);
+      } else {
+        const positioned=ensurePositions(loaded);
+        const viewPositioned=ensureViewPositions(positioned);
+        loadGenRef.current++;
+        resetHistory(viewPositioned);
+      }
       setTab("object");
       setObjSelId(null);
       setSelRelId(null);
@@ -647,7 +713,7 @@ function App(){
     });
   },[]);
 
-  const counts={object:model.objects.length,pane:model.views.length,screen:(model.screens||[]).length};
+  const counts={object:(activeModel.objects||[]).length,pane:(activeModel.views||[]).length,screen:(activeModel.screens||[]).length};
 
   return(
     <div style={{height:"100vh",display:"flex",flexDirection:"column",background:M3.surface,fontFamily:"'Google Sans','Roboto','Noto Sans JP',system-ui,sans-serif",fontSize:14}}>
@@ -663,10 +729,10 @@ function App(){
         <div ref={barRef} style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:12,paddingRight:16,fontSize:14,fontFamily:"inherit"}}/>
       </div>
       <div style={{flex:1,overflow:"hidden"}}>
-        {tab==="object"&&<ObjectView model={model} setModel={setModel} setModelSilent={setModelSilent} selId={objSelId} setSelId={setObjSelId} selRelId={selRelId} setSelRelId={setSelRelId} savedViewState={tabViewState.current.object} onViewStateChange={s=>{tabViewState.current.object=s;}}/>}
+        {tab==="object"&&<ObjectView model={activeModel} setModel={effectiveSetModel} setModelSilent={effectiveSetModelSilent} selId={objSelId} setSelId={setObjSelId} selRelId={selRelId} setSelRelId={setSelRelId} savedViewState={tabViewState.current.object} onViewStateChange={s=>{tabViewState.current.object=s;}}/>}
 
-        {tab==="pane"&&<MapView model={model} setModel={setModel} setModelSilent={setModelSilent} onSelChange={setMapSelRef} savedViewState={tabViewState.current.pane} onViewStateChange={s=>{tabViewState.current.pane=s;}}/>}
-        {tab==="screen"&&<ScreenView model={model} setModel={setModel} setModelSilent={setModelSilent} onSelChange={setScrSelRef}/>}
+        {tab==="pane"&&<MapView model={activeModel} setModel={effectiveSetModel} setModelSilent={effectiveSetModelSilent} onSelChange={setMapSelRef} savedViewState={tabViewState.current.pane} onViewStateChange={s=>{tabViewState.current.pane=s;}}/>}
+        {tab==="screen"&&<ScreenView model={activeModel} setModel={effectiveSetModel} setModelSilent={effectiveSetModelSilent} onSelChange={setScrSelRef}/>}
       </div>
     </div>
   );
