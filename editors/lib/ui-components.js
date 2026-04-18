@@ -193,10 +193,8 @@
     });
 
     return h("div", { className: "variant-bar", onClick: function() { setMenuId(null); } },
-      tabs,
-      h("div", { className: "variant-bar-actions" },
-        variants.length >= 2 ? h("button", { className: "variant-action-btn", onClick: onSplit }, "Split") : null
-      )
+      variants.length >= 2 ? h("button", { className: "variant-action-btn", onClick: onSplit, style: { alignSelf: "center", marginRight: 4 } }, "Split") : null,
+      tabs
     );
   }
 
