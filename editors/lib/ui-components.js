@@ -150,7 +150,7 @@
     // Splitモード中: Split解除ボタンのみ
     if (isSplit) {
       return h("div", { className: "variant-bar" },
-        h("button", { className: "variant-action-btn", onClick: onSplit, style: { color: "var(--md-sys-color-primary)", borderColor: "var(--md-sys-color-primary)" } }, "Exit Split")
+        h("button", { className: "variant-action-btn", onClick: onSplit, style: { color: "var(--md-sys-color-primary)", borderColor: "var(--md-sys-color-primary)" } }, "Exit Compare")
       );
     }
 
@@ -194,7 +194,7 @@
     });
 
     return h("div", { className: "variant-bar", onClick: function() { setMenuId(null); } },
-      variants.length >= 2 ? h("button", { className: "variant-action-btn", onClick: onSplit, style: { alignSelf: "center", marginRight: 4 } }, "Split") : null,
+      variants.length >= 2 ? h("button", { className: "variant-action-btn", onClick: onSplit, style: { alignSelf: "center", marginRight: 4 } }, "Compare") : null,
       tabs
     );
   }
