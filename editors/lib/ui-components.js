@@ -129,6 +129,128 @@
     return {data:data, setData:setData, setDataSilent:setDataSilent, undo:undo, redo:redo, reset:reset, histRef:histRef, dirtyRef:dirtyRef};
   }
 
+  // キャンバス共通操作フック
+  // zoom/pan/wheel/パン操作/Escape/viewState保存を統合
+  function useCanvas(config) {
+    var items = config.items, itemW = config.itemW, itemH = config.itemH;
+    var savedViewState = config.savedViewState, onViewStateChange = config.onViewStateChange;
+    var onEscape = config.onEscape, loadGenRef = config.loadGenRef;
+
+    var initPan = useInitialPan(items, itemW, itemH, loadGenRef);
+    var svgRef = initPan.svgRef, pan = initPan.pan, setPan = initPan.setPan;
+
+    var panningState = useState(false), panning = panningState[0], setPanning = panningState[1];
+    var zoomState = useState(savedViewState && savedViewState.zoom != null ? savedViewState.zoom : 1);
+    var zoom = zoomState[0], setZoom = zoomState[1];
+
+    var panStart = useRef({x:0, y:0, px:0, py:0});
+    var zoomRef = useRef(savedViewState && savedViewState.zoom != null ? savedViewState.zoom : 1);
+    var panRef = useRef(savedViewState && savedViewState.pan ? savedViewState.pan : {x:0, y:0});
+
+    useEffect(function() { zoomRef.current = zoom; }, [zoom]);
+    useEffect(function() { panRef.current = pan; }, [pan]);
+
+    useEffect(function() {
+      if (savedViewState && savedViewState.pan) setPan(savedViewState.pan);
+    }, []);
+
+    useEffect(function() {
+      return function() {
+        if (onViewStateChange) onViewStateChange({zoom: zoomRef.current, pan: panRef.current});
+      };
+    }, []);
+
+    useEffect(function() {
+      if (!onEscape) return;
+      var handler = function(e) {
+        if (e.key === 'Escape') onEscape();
+      };
+      window.addEventListener('keydown', handler);
+      return function() { window.removeEventListener('keydown', handler); };
+    }, [onEscape]);
+
+    var onWheel = useCallback(function(e) {
+      e.preventDefault();
+      if (e.ctrlKey || e.metaKey) {
+        if (!svgRef.current) return;
+        var r = svgRef.current.getBoundingClientRect();
+        var mx = e.clientX - r.left, my = e.clientY - r.top;
+        var d = e.deltaY > 0 ? 0.92 : 1.08;
+        setZoom(function(z) {
+          var nz = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z * d));
+          var wx = mx / z + pan.x, wy = my / z + pan.y;
+          setPan({x: wx - mx / nz, y: wy - my / nz});
+          return nz;
+        });
+      } else {
+        setPan(function(p) { return {x: p.x + e.deltaX / zoom, y: p.y + e.deltaY / zoom}; });
+      }
+    }, [zoom, pan]);
+
+    var onBgMouseDown = useCallback(function(e) {
+      setPanning(true);
+      panStart.current = {x: e.clientX, y: e.clientY, px: pan.x, py: pan.y};
+    }, [pan]);
+
+    var onMouseMove = useCallback(function(e) {
+      if (!panning) return false;
+      setPan({
+        x: panStart.current.px - (e.clientX - panStart.current.x) / zoom,
+        y: panStart.current.py - (e.clientY - panStart.current.y) / zoom
+      });
+      return true;
+    }, [panning, zoom]);
+
+    var onMouseUpOrLeave = useCallback(function() {
+      setPanning(false);
+    }, []);
+
+    return {
+      svgRef: svgRef, zoom: zoom, setZoom: setZoom, pan: pan, setPan: setPan,
+      panning: panning, onWheel: onWheel, onBgMouseDown: onBgMouseDown,
+      onMouseMove: onMouseMove, onMouseUpOrLeave: onMouseUpOrLeave
+    };
+  }
+
+  // ズームボタン群コンポーネント
+  function ZoomControls(props) {
+    var svgRef = props.svgRef, zoom = props.zoom, setZoom = props.setZoom, pan = props.pan, setPan = props.setPan;
+
+    function zoomBy(factor) {
+      var r = svgRef.current && svgRef.current.getBoundingClientRect();
+      if (!r) return;
+      var cx = r.width / 2, cy = r.height / 2;
+      setZoom(function(z) {
+        var nz = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z * factor));
+        var wx = cx / z + pan.x, wy = cy / z + pan.y;
+        setPan({x: wx - cx / nz, y: wy - cy / nz});
+        return nz;
+      });
+    }
+
+    function resetZoom() {
+      var r = svgRef.current && svgRef.current.getBoundingClientRect();
+      if (!r) return;
+      var cx = r.width / 2, cy = r.height / 2;
+      setZoom(function(z) {
+        var wx = cx / z + pan.x, wy = cy / z + pan.y;
+        setPan({x: wx - cx, y: wy - cy});
+        return 1;
+      });
+    }
+
+    var btnStyle = {width:28, height:28, border:"none", background:"transparent", cursor:"pointer", fontSize:16, color:"#5F6368", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center"};
+    var pctStyle = {minWidth:48, height:28, border:"none", background:"transparent", cursor:"pointer", fontSize:12, fontWeight:500, color:"#5F6368", borderRadius:14, fontFamily:"inherit"};
+    var hover = function(e) { e.target.style.background = "#F5F5F5"; };
+    var unhover = function(e) { e.target.style.background = "transparent"; };
+
+    return h("div", {style:{position:"absolute", bottom:16, right:16, display:"flex", alignItems:"center", gap:4, background:"white", borderRadius:"var(--md-sys-shape-full)", padding:"4px 8px", boxShadow:"var(--md-sys-elevation-1)"}},
+      h("button", {onClick: function() { zoomBy(0.8); }, style: btnStyle, onMouseEnter: hover, onMouseLeave: unhover}, "\u2212"),
+      h("button", {onClick: resetZoom, style: pctStyle, onMouseEnter: hover, onMouseLeave: unhover}, Math.round(zoom * 100) + "%"),
+      h("button", {onClick: function() { zoomBy(1.25); }, style: btnStyle, onMouseEnter: hover, onMouseLeave: unhover}, "+")
+    );
+  }
+
   // バリアント サブタブバー
   // props: { variants, onSwitch, onDuplicate, onDelete, onRename, onSplit, onKeep, isSplit }
   function VariantBar(props) {
@@ -213,6 +335,8 @@
   exports.SLabel = SLabel;
   exports.useInitialPan = useInitialPan;
   exports.useHistory = useHistory;
+  exports.useCanvas = useCanvas;
+  exports.ZoomControls = ZoomControls;
   exports.VariantBar = VariantBar;
 
 })(window.__editorUI = window.__editorUI || {});
