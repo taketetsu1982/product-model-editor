@@ -802,7 +802,7 @@ function App(){
         {splitMode?<>
           {/* 左パネル */}
           <div style={{flex:1,overflow:"hidden",borderRight:"2px solid "+M3.outlineVar,position:"relative"}}>
-            <div style={{position:"absolute",top:8,left:8,zIndex:10,display:"flex",alignItems:"center",gap:4,background:M3.primaryContainer,color:M3.onPrimaryContainer,padding:"2px 8px",borderRadius:M3.shapeSm,fontSize:11,fontWeight:500}}>
+            <div style={{position:"absolute",top:8,right:8,zIndex:10,display:"flex",alignItems:"center",gap:4,background:M3.primaryContainer,color:M3.onPrimaryContainer,padding:"2px 8px",borderRadius:M3.shapeSm,fontSize:11,fontWeight:500}}>
               <select value={splitMode.left} onChange={e=>setSplitMode(s=>({...s,left:e.target.value}))} style={{border:"none",background:"transparent",color:"inherit",fontSize:11,fontWeight:500,fontFamily:"inherit",cursor:"pointer"}}>
                 {variantList.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}
               </select>
@@ -813,7 +813,7 @@ function App(){
           </div>
           {/* 右パネル */}
           <div style={{flex:1,overflow:"hidden",position:"relative"}}>
-            <div style={{position:"absolute",top:8,left:8,zIndex:10,display:"flex",alignItems:"center",gap:4,background:M3.surfaceCont,color:M3.onSurface,padding:"2px 8px",borderRadius:M3.shapeSm,fontSize:11,fontWeight:500}}>
+            <div style={{position:"absolute",top:8,right:8,zIndex:10,display:"flex",alignItems:"center",gap:4,background:M3.surfaceCont,color:M3.onSurface,padding:"2px 8px",borderRadius:M3.shapeSm,fontSize:11,fontWeight:500}}>
               <select value={splitMode.right} onChange={e=>setSplitMode(s=>({...s,right:e.target.value}))} style={{border:"none",background:"transparent",color:"inherit",fontSize:11,fontWeight:500,fontFamily:"inherit",cursor:"pointer"}}>
                 {variantList.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}
               </select>
