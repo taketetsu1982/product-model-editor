@@ -426,14 +426,14 @@ function ScreenView({model,setModel,setModelSilent,onSelChange,onSplit,savedView
 
 /* ===== useClipboard フック ===== */
 // クリップボード操作（コピー/ペースト/カット/削除/全選択/複製/矢印移動）を集約
-function useClipboard({tab, model, activeModel, setModel, effectiveSetModel, histRef, objSelId, setObjSelId, selRelId, setSelRelId, mapSelRef, scrSelRef}){
+function useClipboard({tab, activeModel, effectiveSetModel, objSelId, setObjSelId, selRelId, setSelRelId, mapSelRef, scrSelRef}){
   const clipRef=useRef(null);
 
   // コピー: objectタブではオブジェクト、viewタブではビューをコピー
   const handleCopy=useCallback(()=>{
     if(tab==='object'){
       if(!objSelId)return false;
-      const ent=histRef.current.stack[histRef.current.idx]?.objects?.find(e=>e.id===objSelId);
+      const ent=(activeModel.objects||[]).find(e=>e.id===objSelId);
       if(!ent)return false;
       clipRef.current={type:'object',data:JSON.parse(JSON.stringify(ent))};
       showToast('Copied: '+ent.name);
@@ -442,23 +442,23 @@ function useClipboard({tab, model, activeModel, setModel, effectiveSetModel, his
     if(tab==='pane'){
       const{vwId}=mapSelRef.current;
       if(!vwId)return false;
-      const vw=model.views.find(s=>s.id===vwId);
+      const vw=activeModel.views.find(s=>s.id===vwId);
       if(!vw)return false;
       clipRef.current={type:'view',data:JSON.parse(JSON.stringify(vw))};
-      showToast('Copied: '+viewLabel(vw,model.objects));
+      showToast('Copied: '+viewLabel(vw,activeModel.objects));
       return true;
     }
     if(tab==='screen'){
       const scId=scrSelRef.current;
       if(!scId)return false;
-      const sc=(model.screens||[]).find(s=>s.id===scId);
+      const sc=(activeModel.screens||[]).find(s=>s.id===scId);
       if(!sc)return false;
       clipRef.current={type:'screen',data:JSON.parse(JSON.stringify(sc))};
       showToast('Copied: '+sc.name);
       return true;
     }
     return false;
-  },[tab,objSelId,model]);
+  },[tab,objSelId,activeModel]);
 
   // ペースト
   const handlePaste=useCallback(()=>{
@@ -466,7 +466,7 @@ function useClipboard({tab, model, activeModel, setModel, effectiveSetModel, his
     if(tab==='object'&&clipRef.current.type==='object'){
       const src=clipRef.current.data;
       const newId=uid();
-      setModel(m=>{const names=m.objects.map(e=>e.name);const newEnt={...JSON.parse(JSON.stringify(src)),id:newId,name:uniqueName(src.name,names),x:(src.x||80)+40,y:(src.y||80)+40,relations:src.relations.map(r=>({...r,id:uid()}))};return{...m,objects:[...m.objects,newEnt]};});
+      effectiveSetModel(m=>{const names=m.objects.map(e=>e.name);const newEnt={...JSON.parse(JSON.stringify(src)),id:newId,name:uniqueName(src.name,names),x:(src.x||80)+40,y:(src.y||80)+40,relations:src.relations.map(r=>({...r,id:uid()}))};return{...m,objects:[...m.objects,newEnt]};});
       setObjSelId(newId);
       showToast('Pasted: '+src.name);
       return true;
@@ -474,28 +474,28 @@ function useClipboard({tab, model, activeModel, setModel, effectiveSetModel, his
     if(tab==='pane'&&clipRef.current.type==='view'){
       const src=clipRef.current.data;
       const newId=uid();
-      setModel(m=>{const newVw={...JSON.parse(JSON.stringify(src)),id:newId,x:(src.x||80)+40,y:(src.y||80)+40,objectId:src.objectId||"",fields:[...(src.fields||[])],verbs:[...(src.verbs||[])]};delete newVw.objects;delete newVw.name;return{...m,views:[...m.views,newVw]};});
+      effectiveSetModel(m=>{const newVw={...JSON.parse(JSON.stringify(src)),id:newId,x:(src.x||80)+40,y:(src.y||80)+40,objectId:src.objectId||"",fields:[...(src.fields||[])],verbs:[...(src.verbs||[])]};delete newVw.objects;delete newVw.name;return{...m,views:[...m.views,newVw]};});
       showToast('Pasted: '+src.name);
       return true;
     }
     if(tab==='screen'&&clipRef.current.type==='screen'){
       const src=clipRef.current.data;
       const newId=uid();
-      setModel(m=>({...m,screens:[...(m.screens||[]),{...JSON.parse(JSON.stringify(src)),id:newId,x:(src.x||80)+40,y:(src.y||80)+40}]}));
+      effectiveSetModel(m=>({...m,screens:[...(m.screens||[]),{...JSON.parse(JSON.stringify(src)),id:newId,x:(src.x||80)+40,y:(src.y||80)+40}]}));
       showToast('Pasted: '+src.name);
       return true;
     }
     return false;
-  },[tab,setModel]);
+  },[tab,effectiveSetModel]);
 
   // カット
   const handleCut=useCallback(()=>{
     if(tab==='object'){
       if(!objSelId)return false;
-      const ent=histRef.current.stack[histRef.current.idx]?.objects?.find(e=>e.id===objSelId);
+      const ent=(activeModel.objects||[]).find(e=>e.id===objSelId);
       if(!ent)return false;
       clipRef.current={type:'object',data:JSON.parse(JSON.stringify(ent))};
-      setModel(m=>({...m,objects:m.objects.filter(e=>e.id!==objSelId)}));
+      effectiveSetModel(m=>({...m,objects:m.objects.filter(e=>e.id!==objSelId)}));
       setObjSelId(null);
       showToast('Cut: '+ent.name);
       return true;
@@ -503,42 +503,42 @@ function useClipboard({tab, model, activeModel, setModel, effectiveSetModel, his
     if(tab==='pane'){
       const{vwId}=mapSelRef.current;
       if(!vwId)return false;
-      const vw=model.views.find(s=>s.id===vwId);
+      const vw=activeModel.views.find(s=>s.id===vwId);
       if(!vw)return false;
       clipRef.current={type:'view',data:JSON.parse(JSON.stringify(vw))};
-      setModel(m=>({...m,views:m.views.filter(s=>s.id!==vwId),paneGraph:m.paneGraph.filter(t=>t.from!==vwId&&t.to!==vwId),screens:(m.screens||[]).map(sc=>({...sc,paneIds:(sc.paneIds||[]).filter(p=>p!==vwId)}))}));
-      showToast('Cut: '+viewLabel(vw,model.objects));
+      effectiveSetModel(m=>({...m,views:m.views.filter(s=>s.id!==vwId),paneGraph:m.paneGraph.filter(t=>t.from!==vwId&&t.to!==vwId),screens:(m.screens||[]).map(sc=>({...sc,paneIds:(sc.paneIds||[]).filter(p=>p!==vwId)}))}));
+      showToast('Cut: '+viewLabel(vw,activeModel.objects));
       return true;
     }
     if(tab==='screen'){
       const scId=scrSelRef.current;
       if(!scId)return false;
-      const sc=(model.screens||[]).find(s=>s.id===scId);
+      const sc=(activeModel.screens||[]).find(s=>s.id===scId);
       if(!sc)return false;
       clipRef.current={type:'screen',data:JSON.parse(JSON.stringify(sc))};
-      setModel(m=>({...m,screens:m.screens.filter(s=>s.id!==scId)}));
+      effectiveSetModel(m=>({...m,screens:m.screens.filter(s=>s.id!==scId)}));
       showToast('Cut: '+sc.name);
       return true;
     }
     return false;
-  },[tab,objSelId,model,setModel]);
+  },[tab,objSelId,activeModel,effectiveSetModel]);
 
   // 削除: タブに応じてオブジェクト/リレーション/ビュー/トランジションを削除
   const handleDelete=useCallback(()=>{
     if(tab==='object'){
       if(selRelId){
-        const owner=model.objects.find(e=>e.id===selRelId.entId);
+        const owner=activeModel.objects.find(e=>e.id===selRelId.entId);
         const rel=owner&&owner.relations.find(r=>r.id===selRelId.relId);
         if(!rel)return false;
-        setModel(m=>({...m,objects:m.objects.map(e=>e.id===selRelId.entId?{...e,relations:e.relations.filter(r=>r.id!==selRelId.relId)}:e)}));
+        effectiveSetModel(m=>({...m,objects:m.objects.map(e=>e.id===selRelId.entId?{...e,relations:e.relations.filter(r=>r.id!==selRelId.relId)}:e)}));
         setSelRelId(null);
         showToast('Deleted relation');
         return true;
       }
       if(!objSelId)return false;
-      const ent=model.objects.find(e=>e.id===objSelId);
+      const ent=activeModel.objects.find(e=>e.id===objSelId);
       if(!ent)return false;
-      setModel(m=>({...m,objects:m.objects.filter(e=>e.id!==objSelId)}));
+      effectiveSetModel(m=>({...m,objects:m.objects.filter(e=>e.id!==objSelId)}));
       setObjSelId(null);
       showToast('Deleted: '+ent.name);
       return true;
@@ -546,30 +546,30 @@ function useClipboard({tab, model, activeModel, setModel, effectiveSetModel, his
     if(tab==='pane'){
       const{vwId,navId}=mapSelRef.current;
       if(navId){
-        const nav=model.paneGraph.find(n=>n.id===navId);
+        const nav=activeModel.paneGraph.find(n=>n.id===navId);
         if(!nav)return false;
-        setModel(m=>({...m,paneGraph:m.paneGraph.filter(n=>n.id!==navId)}));
+        effectiveSetModel(m=>({...m,paneGraph:m.paneGraph.filter(n=>n.id!==navId)}));
         showToast('Deleted edge');
         return true;
       }
       if(!vwId)return false;
-      const vw=model.views.find(s=>s.id===vwId);
+      const vw=activeModel.views.find(s=>s.id===vwId);
       if(!vw)return false;
-      setModel(m=>({...m,views:m.views.filter(s=>s.id!==vwId),paneGraph:m.paneGraph.filter(t=>t.from!==vwId&&t.to!==vwId),screens:(m.screens||[]).map(sc=>({...sc,paneIds:(sc.paneIds||[]).filter(p=>p!==vwId)}))}));
-      showToast('Deleted: '+viewLabel(vw,model.objects));
+      effectiveSetModel(m=>({...m,views:m.views.filter(s=>s.id!==vwId),paneGraph:m.paneGraph.filter(t=>t.from!==vwId&&t.to!==vwId),screens:(m.screens||[]).map(sc=>({...sc,paneIds:(sc.paneIds||[]).filter(p=>p!==vwId)}))}));
+      showToast('Deleted: '+viewLabel(vw,activeModel.objects));
       return true;
     }
     if(tab==='screen'){
       const scId=scrSelRef.current;
       if(!scId)return false;
-      const sc=(model.screens||[]).find(s=>s.id===scId);
+      const sc=(activeModel.screens||[]).find(s=>s.id===scId);
       if(!sc)return false;
-      setModel(m=>({...m,screens:m.screens.filter(s=>s.id!==scId)}));
+      effectiveSetModel(m=>({...m,screens:m.screens.filter(s=>s.id!==scId)}));
       showToast('Deleted: '+sc.name);
       return true;
     }
     return false;
-  },[tab,objSelId,selRelId,model,setModel]);
+  },[tab,objSelId,selRelId,activeModel,effectiveSetModel]);
 
   // 全選択
   const handleSelectAll=useCallback(()=>{
@@ -803,7 +803,7 @@ function App(){
   },[redo,splitMode]);
 
   // クリップボード操作フック
-  const{handleCopy,handlePaste,handleCut,handleDelete,handleSelectAll,handleDuplicateItem,handleMoveSelection}=useClipboard({tab,model,activeModel,setModel,effectiveSetModel,histRef,objSelId,setObjSelId,selRelId,setSelRelId,mapSelRef,scrSelRef});
+  const{handleCopy,handlePaste,handleCut,handleDelete,handleSelectAll,handleDuplicateItem,handleMoveSelection}=useClipboard({tab,activeModel,effectiveSetModel,objSelId,setObjSelId,selRelId,setSelRelId,mapSelRef,scrSelRef});
 
   // グローバル関数登録フック
   useGlobalKeys({handleUndo,handleRedo,handleCopy,handlePaste,handleCut,handleDelete,handleSelectAll,handleDuplicateItem,handleMoveSelection});
