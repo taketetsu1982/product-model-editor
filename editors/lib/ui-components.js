@@ -140,11 +140,11 @@
     var svgRef = initPan.svgRef, pan = initPan.pan, setPan = initPan.setPan;
 
     var panningState = useState(false), panning = panningState[0], setPanning = panningState[1];
-    var zoomState = useState(savedViewState && savedViewState.zoom ? savedViewState.zoom : 1);
+    var zoomState = useState(savedViewState && savedViewState.zoom != null ? savedViewState.zoom : 1);
     var zoom = zoomState[0], setZoom = zoomState[1];
 
     var panStart = useRef({x:0, y:0, px:0, py:0});
-    var zoomRef = useRef(savedViewState && savedViewState.zoom ? savedViewState.zoom : 1);
+    var zoomRef = useRef(savedViewState && savedViewState.zoom != null ? savedViewState.zoom : 1);
     var panRef = useRef(savedViewState && savedViewState.pan ? savedViewState.pan : {x:0, y:0});
 
     useEffect(function() { zoomRef.current = zoom; }, [zoom]);
