@@ -212,4 +212,72 @@
     return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
   };
 
+  // --- Mermaid記法生成 ---
+  var REL_MERMAID = { "has-many": "||--o{", "has-one": "||--||", "many-to-many": "}o--o{" };
+
+  exports.generateMermaid = function(tab, model) {
+    if (tab === "object") {
+      var lines = ["erDiagram"];
+      (model.objects || []).forEach(function(obj) {
+        // リレーションがないオブジェクトも表示する
+        if (!obj.relations || obj.relations.length === 0) {
+          lines.push("    " + obj.id + '["' + obj.name + '"]');
+          return;
+        }
+        obj.relations.forEach(function(r) {
+          var target = (model.objects || []).find(function(o) { return o.id === r.targetId; });
+          var sym = REL_MERMAID[r.type] || "||--o{";
+          lines.push("    " + obj.id + " " + sym + " " + r.targetId + ' : "' + (r.type || "") + '"');
+        });
+      });
+      return lines.join("\n");
+    }
+
+    if (tab === "pane") {
+      var lines = ["flowchart LR"];
+      // ノード定義
+      (model.views || []).forEach(function(vw) {
+        var on = exports.objName(model.objects || [], vw.objectId);
+        var tl = exports.TYPE_LABEL[vw.type] || vw.type;
+        lines.push("    " + vw.id + '["' + on + " " + tl + '"]');
+      });
+      // 辺
+      (model.paneGraph || []).forEach(function(e) {
+        if (e.type === "drilldown") {
+          lines.push("    " + e.from + " -->|" + (e.param || "drilldown") + "| " + e.to);
+        } else {
+          lines.push("    " + e.from + " --- " + e.to);
+        }
+      });
+      return lines.join("\n");
+    }
+
+    if (tab === "screen") {
+      var lines = ["flowchart TD"];
+      var devices = {};
+      (model.screens || []).forEach(function(sc) {
+        var d = sc.device || "unknown";
+        if (!devices[d]) devices[d] = [];
+        devices[d].push(sc);
+      });
+      Object.keys(devices).forEach(function(d) {
+        lines.push("    subgraph " + d);
+        devices[d].forEach(function(sc) {
+          var paneLabels = (sc.paneIds || []).map(function(pid) {
+            var vw = (model.views || []).find(function(v) { return v.id === pid; });
+            if (!vw) return pid;
+            var on = exports.objName(model.objects || [], vw.objectId);
+            var tl = exports.TYPE_LABEL[vw.type] || vw.type;
+            return on + " " + tl;
+          });
+          lines.push('        ' + sc.id + '["' + sc.name + '<br/>' + paneLabels.join(", ") + '"]');
+        });
+        lines.push("    end");
+      });
+      return lines.join("\n");
+    }
+
+    return "";
+  };
+
 })(typeof module !== 'undefined' ? module.exports : (window.__editorLib = window.__editorLib || {}));
