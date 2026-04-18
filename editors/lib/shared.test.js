@@ -6,6 +6,13 @@ const {
   objPalette, objColor, objName,
   OBJ_PALETTE, LABEL_CHAR_W, LABEL_CHAR_W_WIDE, LABEL_MIN_W, LABEL_PAD,
   isWideChar,
+  REL_TYPES, REL_TYPE_LABELS, EW, EH, SELF_REF_X, SELF_REF_Y, SELF_REF_CP,
+  OBJ_GRID_COLS, OBJ_GRID_GAP_X, OBJ_GRID_GAP_Y, OBJ_GRID_PAD_X, OBJ_GRID_PAD_Y,
+  VW_GRID_COLS, VW_GRID_GAP_X, VW_GRID_GAP_Y, VW_GRID_PAD_X, VW_GRID_PAD_Y,
+  SW, SH, SC_HEADER_H, SC_OBJ_START_Y, SC_OBJ_ROW_H, SC_OBJ_PAD_X,
+  VIEW_TYPES, TYPE_LABEL, viewLabel, EMPTY,
+  DEVICE_ICONS, SCR_PAD, SCR_HEADER_H, SCR_PANE_H, SCR_PANE_GAP, SCR_PANE_PAD, SCR_MIN_W,
+  scrCardSize,
 } = require('./shared.js');
 
 describe('uid', () => {
@@ -197,5 +204,150 @@ describe('objName', () => {
 
   it('存在しないIDではIDそのものを返す', () => {
     expect(objName(objects, 'unknown')).toBe('unknown');
+  });
+});
+
+// --- 移動した定数のテスト ---
+
+describe('REL_TYPES / REL_TYPE_LABELS', () => {
+  it('3種類のリレーションタイプを持つ', () => {
+    expect(REL_TYPES).toEqual(['has-many', 'has-one', 'many-to-many']);
+  });
+
+  it('各タイプのラベルが定義されている', () => {
+    expect(REL_TYPE_LABELS['has-many']).toBe('has many');
+    expect(REL_TYPE_LABELS['has-one']).toBe('has one');
+    expect(REL_TYPE_LABELS['many-to-many']).toBe('many to many');
+  });
+});
+
+describe('オブジェクトノード定数', () => {
+  it('EW/EHが正しい値', () => {
+    expect(EW).toBe(200);
+    expect(EH).toBe(72);
+  });
+
+  it('自己参照カーブ定数が正しい値', () => {
+    expect(SELF_REF_X).toBe(6);
+    expect(SELF_REF_Y).toBe(14);
+    expect(SELF_REF_CP).toBe(38);
+  });
+});
+
+describe('グリッドレイアウト定数', () => {
+  it('Objectグリッドが正しい値', () => {
+    expect(OBJ_GRID_COLS).toBe(3);
+    expect(OBJ_GRID_GAP_X).toBe(360);
+    expect(OBJ_GRID_GAP_Y).toBe(240);
+    expect(OBJ_GRID_PAD_X).toBe(80);
+    expect(OBJ_GRID_PAD_Y).toBe(80);
+  });
+
+  it('Viewグリッドが正しい値', () => {
+    expect(VW_GRID_COLS).toBe(3);
+    expect(VW_GRID_GAP_X).toBe(120);
+    expect(VW_GRID_GAP_Y).toBe(80);
+    expect(VW_GRID_PAD_X).toBe(60);
+    expect(VW_GRID_PAD_Y).toBe(60);
+  });
+});
+
+describe('ビューカード定数', () => {
+  it('SW/SHが正しい値', () => {
+    expect(SW).toBe(240);
+    expect(SH).toBe(76);
+  });
+
+  it('カード内部定数が正しい値', () => {
+    expect(SC_HEADER_H).toBe(36);
+    expect(SC_OBJ_START_Y).toBe(40);
+    expect(SC_OBJ_ROW_H).toBe(22);
+    expect(SC_OBJ_PAD_X).toBe(8);
+  });
+});
+
+describe('VIEW_TYPES / TYPE_LABEL', () => {
+  it('2種類のビュータイプを持つ', () => {
+    expect(VIEW_TYPES).toEqual(['collection', 'single']);
+  });
+
+  it('各タイプのラベルが定義されている', () => {
+    expect(TYPE_LABEL.collection).toBe('Collection');
+    expect(TYPE_LABEL.single).toBe('Single');
+  });
+});
+
+describe('EMPTY', () => {
+  it('空モデルの構造が正しい', () => {
+    expect(EMPTY).toEqual({
+      objects: [], views: [], paneGraph: [], screens: [],
+      devices: ['mobile', 'desktop'],
+    });
+  });
+});
+
+describe('DEVICE_ICONS', () => {
+  it('3種類のデバイスアイコンが定義されている', () => {
+    expect(DEVICE_ICONS.mobile).toBe('smartphone');
+    expect(DEVICE_ICONS.tablet).toBe('tablet');
+    expect(DEVICE_ICONS.desktop).toBe('desktop_windows');
+  });
+});
+
+describe('Screenカード定数', () => {
+  it('各定数が正しい値', () => {
+    expect(SCR_PAD).toBe(12);
+    expect(SCR_HEADER_H).toBe(40);
+    expect(SCR_PANE_H).toBe(36);
+    expect(SCR_PANE_GAP).toBe(4);
+    expect(SCR_PANE_PAD).toBe(8);
+    expect(SCR_MIN_W).toBe(200);
+  });
+});
+
+describe('viewLabel', () => {
+  const objs = [{ id: 'o1', name: 'タスク' }];
+
+  it('オブジェクト名+タイプラベルを返す', () => {
+    expect(viewLabel({ objectId: 'o1', type: 'collection' }, objs)).toBe('タスク Collection');
+    expect(viewLabel({ objectId: 'o1', type: 'single' }, objs)).toBe('タスク Single');
+  });
+
+  it('未知のタイプではtype値をそのまま使う', () => {
+    expect(viewLabel({ objectId: 'o1', type: 'custom' }, objs)).toBe('タスク custom');
+  });
+});
+
+describe('scrCardSize', () => {
+  const objects = [{ id: 'o1', name: 'Task' }];
+  const views = [
+    { id: 'v1', objectId: 'o1', type: 'collection' },
+    { id: 'v2', objectId: 'o1', type: 'single' },
+  ];
+
+  it('Paneなしの場合、最小幅と固定ボディ高さを返す', () => {
+    const sc = { paneIds: [] };
+    const { w, h } = scrCardSize(sc, views, objects);
+    expect(w).toBe(SCR_MIN_W);
+    expect(h).toBe(SCR_HEADER_H + 48);
+  });
+
+  it('Pane1つの場合、高さにPaneの高さが含まれる', () => {
+    const sc = { paneIds: ['v1'] };
+    const { h } = scrCardSize(sc, views, objects);
+    expect(h).toBe(SCR_HEADER_H + SCR_PANE_H + SCR_PANE_PAD * 2);
+  });
+
+  it('Pane2つの場合、ギャップが含まれる', () => {
+    const sc = { paneIds: ['v1', 'v2'] };
+    const { h } = scrCardSize(sc, views, objects);
+    expect(h).toBe(SCR_HEADER_H + 2 * SCR_PANE_H + SCR_PANE_GAP + SCR_PANE_PAD * 2);
+  });
+
+  it('存在しないPaneIDは無視される', () => {
+    const sc = { paneIds: ['v1', 'nonexistent'] };
+    const { h } = scrCardSize(sc, views, objects);
+    // nonexistentはfilterで除外されるため、Pane1つ分
+    expect(h).toBe(SCR_HEADER_H + SCR_PANE_H + SCR_PANE_PAD * 2);
   });
 });
