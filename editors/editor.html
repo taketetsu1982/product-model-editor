@@ -142,8 +142,17 @@ const loadGenRef={current:0};
 function ObjectView({model,setModel,setModelSilent,selId,setSelId,selRelId,setSelRelId,savedViewState,onViewStateChange,onSplit}){
   const[drag,setDrag]=useState(null),[conn,setConn]=useState(null),[connDrag,setConnDrag]=useState(null),[relDrag,setRelDrag]=useState(null);
   const[multiSel,setMultiSel]=useState(new Set());
-  const canvas=useCanvas({items:model.objects,itemW:EW,itemH:EH,savedViewState,onViewStateChange,loadGenRef,onEscape:useCallback(()=>{setMultiSel(new Set());multiOffsets.current={};setConnDrag(null);},[])});
-  const{svgRef,zoom,setZoom,pan,setPan,panning,spaceHeld}=canvas;
+  const canvas=useCanvas({items:model.objects,itemW:EW,itemH:EH,savedViewState,onViewStateChange,loadGenRef,onEscape:useCallback(()=>{setMultiSel(new Set());multiOffsets.current={};setConnDrag(null);},[]),onMarqueeEnd:useCallback((rect,shift)=>{
+  const hit=new Set();
+  (model.objects||[]).forEach(e=>{
+    if(e.x<rect.x+rect.w && e.x+EW>rect.x && e.y<rect.y+rect.h && e.y+EH>rect.y) hit.add(e.id);
+  });
+  if(hit.size===0)return;
+  if(shift){setMultiSel(prev=>{const next=new Set(prev);hit.forEach(id=>next.add(id));return next;});}
+  else{setMultiSel(hit);}
+  setSelId(null);setSelRelId(null);multiOffsets.current={};
+},[model.objects])});
+  const{svgRef,zoom,setZoom,pan,setPan,panning,spaceHeld,marquee}=canvas;
   const dOff=useRef({x:0,y:0}),multiOffsets=useRef({});
   const multiSelRef=useRef(multiSel);
   multiSelRef.current=multiSel;
@@ -168,7 +177,7 @@ function ObjectView({model,setModel,setModelSilent,selId,setSelId,selRelId,setSe
   return(
     <div style={{display:"flex",flexDirection:"column",height:"100%",position:"relative"}}>
       <div style={{flex:1,position:"relative",overflow:"hidden"}}>
-        <svg ref={svgRef} width="100%" height="100%" style={{cursor:spaceHeld?(panning?"grabbing":"grab"):connDrag?"grabbing":relDrag?"grabbing":drag?"grabbing":panning?"grabbing":connOn?"crosshair":"grab",display:"block",userSelect:connDrag||relDrag||drag||panning?"none":"auto"}} onMouseMove={onMM} onMouseUp={onUp} onMouseLeave={onUp} onWheel={canvas.onWheel} onClick={e=>{if(e.target===e.currentTarget||e.target.getAttribute('data-bg')){if(!connOn){setSelId(null);setSelRelId(null);setMultiSel(new Set());multiOffsets.current={};}}}}>
+        <svg ref={svgRef} width="100%" height="100%" style={{cursor:spaceHeld?(panning?"grabbing":"grab"):connDrag?"grabbing":relDrag?"grabbing":drag?"grabbing":panning?"grabbing":connOn?"crosshair":"default",display:"block",userSelect:connDrag||relDrag||drag||panning?"none":"auto"}} onMouseMove={onMM} onMouseUp={onUp} onMouseLeave={onUp} onWheel={canvas.onWheel} onClick={e=>{if(e.target===e.currentTarget||e.target.getAttribute('data-bg')){if(!connOn){setSelId(null);setSelRelId(null);setMultiSel(new Set());multiOffsets.current={};}}}}>
           <defs>
             <pattern id="dotpat" width={24/zoom} height={24/zoom} patternUnits="userSpaceOnUse" x={(-pan.x*zoom)%(24)} y={(-pan.y*zoom)%(24)}><circle cx={1/zoom} cy={1/zoom} r={1/zoom} fill="#E0E0E0"/></pattern>
             <marker id="m-hm" markerWidth="12" markerHeight="12" refX="11" refY="6" orient="auto"><line x1="11" y1="6" x2="3" y2="1" stroke="#9AA0A6" strokeWidth="1.5"/><line x1="11" y1="6" x2="3" y2="6" stroke="#9AA0A6" strokeWidth="1.5"/><line x1="11" y1="6" x2="3" y2="11" stroke="#9AA0A6" strokeWidth="1.5"/></marker>
@@ -180,7 +189,7 @@ function ObjectView({model,setModel,setModelSilent,selId,setSelId,selRelId,setSe
             <marker id="m-mm-s" markerWidth="10" markerHeight="10" refX="1" refY="5" orient="auto"><polygon points="1 5,5 1,9 5,5 9" fill="#9AA0A6"/></marker>
             <marker id="m-mm-s-hi" markerWidth="10" markerHeight="10" refX="1" refY="5" orient="auto"><polygon points="1 5,5 1,9 5,5 9" fill="#1A73E8"/></marker>
           </defs>
-          <rect width="100%" height="100%" fill="url(#dotpat)" data-bg="1" onMouseDown={e=>{if(spaceHeld||conn===null)canvas.onBgMouseDown(e);}}/>
+          <rect width="100%" height="100%" fill="url(#dotpat)" data-bg="1" onMouseDown={e=>{if(conn!==null&&!spaceHeld)return;canvas.onBgMouseDown(e);}}/>
           <g transform={`scale(${zoom}) translate(${-pan.x},${-pan.y})`}>
           {ents.map(ent=>{const p=objPalette(ents,ent.id),isSel=selId===ent.id||multiSel.has(ent.id),isCS=conn===ent.id,isEditable=selId===ent.id&&multiSel.size===0;return<g key={ent.id} transform={`translate(${ent.x},${ent.y})`} onMouseDown={e=>onBoxMD(e,ent.id)} style={{cursor:connOn?"pointer":"grab"}}><rect x={1} y={2} width={EW} height={EH} rx={14} fill="rgba(0,0,0,0.04)"/><rect width={EW} height={EH} rx={14} fill={p.bg} stroke={isSel||isCS?p.fg:"transparent"} strokeWidth={isSel||isCS?2.5:0}/><foreignObject x={0} y={0} width={EW} height={EH}><div style={{width:EW,height:EH,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px 16px",boxSizing:"border-box",fontSize:16,fontWeight:600,color:p.fg,textAlign:"center",wordBreak:"break-word",lineHeight:"20px",overflow:"hidden"}}>{isEditable?<input value={ent.name} onChange={e=>upd({...ent,name:e.target.value})} autoFocus onClick={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} style={{width:"100%",border:"none",background:"transparent",outline:"none",fontSize:16,fontWeight:600,color:p.fg,textAlign:"center",fontFamily:"inherit",padding:0}}/>:ent.name}</div></foreignObject></g>;})}
           {ents.flatMap(ent=>ent.relations.map((rel,ri)=>{const tgt=ents.find(e=>e.id===rel.targetId);if(!tgt)return null;const isRelSel=selRelId&&selRelId.entId===ent.id&&selRelId.relId===rel.id;const hi=isRelSel,col=hi?"#1A73E8":"#9AA0A6",hs=hi?"-hi":"";const rtype=rel.type||"has-many";const endMk=rtype==="has-many"?`url(#m-hm${hs})`:rtype==="has-one"?`url(#m-ho${hs})`:`url(#m-mm${hs})`;const startMk=rtype==="many-to-many"?`url(#m-mm-s${hs})`:"";if(tgt.id===ent.id){const lx=ent.x+EW-SELF_REF_X,ty=ent.y+SELF_REF_Y;const selfD=`M${lx},${ty} C${lx+SELF_REF_CP},${ty-14} ${lx+SELF_REF_CP},${ty+28} ${lx},${ty+20}`;return<g key={`l-${ent.id}-${ri}`} onClick={e=>onRelClick(e,ent.id,rel.id)} style={{cursor:"pointer"}}><path d={selfD} fill="none" stroke="transparent" strokeWidth={12}/><path d={selfD} fill="none" stroke={col} strokeWidth={isRelSel?2.5:1.5} markerEnd={endMk}/></g>;}const fp=edgePt(ent.x,ent.y,EW,EH,tgt.x+EW/2,tgt.y+EH/2),tp=edgePt(tgt.x,tgt.y,EW,EH,ent.x+EW/2,ent.y+EH/2);return<g key={`l-${ent.id}-${ri}`} onClick={e=>onRelClick(e,ent.id,rel.id)} style={{cursor:"pointer"}}><line x1={fp.x} y1={fp.y} x2={tp.x} y2={tp.y} stroke="transparent" strokeWidth={12}/><line x1={fp.x} y1={fp.y} x2={tp.x} y2={tp.y} stroke={col} strokeWidth={isRelSel?2.5:hi?2:1.5} markerEnd={endMk} markerStart={startMk}/>{isRelSel&&!relDrag&&<><circle cx={fp.x} cy={fp.y} r={6} fill="white" stroke="#1A73E8" strokeWidth={2} onMouseDown={e=>onHandleMD(e,ent.id,rel.id,"source")} style={{cursor:"grab"}}/><circle cx={tp.x} cy={tp.y} r={6} fill="white" stroke="#1A73E8" strokeWidth={2} onMouseDown={e=>onHandleMD(e,ent.id,rel.id,"target")} style={{cursor:"grab"}}/></>}</g>;}))}
@@ -188,6 +197,7 @@ function ObjectView({model,setModel,setModelSilent,selId,setSelId,selRelId,setSe
           {connDrag&&connHasSrc&&(()=>{const src=ents.find(e=>e.id===conn);if(!src)return null;const fp=edgePt(src.x,src.y,EW,EH,connDrag.mx,connDrag.my);return<line x1={fp.x} y1={fp.y} x2={connDrag.mx} y2={connDrag.my} stroke="#1A73E8" strokeWidth={2} strokeDasharray="6 3" opacity={0.7}/>;})()}
           {ents.flatMap(ent=>ent.relations.map((rel,ri)=>{const tgt=ents.find(e=>e.id===rel.targetId);if(!tgt)return null;const isRelSel=selRelId&&selRelId.entId===ent.id&&selRelId.relId===rel.id;const hi=isRelSel,col=hi?"#1A73E8":"#9AA0A6";const cLabel=REL_TYPE_LABELS[rel.type||"has-many"]||"1:n";if(tgt.id===ent.id){const lx=ent.x+EW-SELF_REF_X,ty=ent.y+SELF_REF_Y;return<text key={`lb-${ent.id}-${ri}`} x={lx+SELF_REF_CP+4} y={ty+6} fontSize={11} fontWeight={hi?600:400} fill={col} onClick={e=>onRelClick(e,ent.id,rel.id)} style={{cursor:"pointer"}}>{cLabel}</text>;}const fp=edgePt(ent.x,ent.y,EW,EH,tgt.x+EW/2,tgt.y+EH/2),tp=edgePt(tgt.x,tgt.y,EW,EH,ent.x+EW/2,ent.y+EH/2),mx=(fp.x+tp.x)/2,my=(fp.y+tp.y)/2;const lw=labelWidth(cLabel);return<g key={`lb-${ent.id}-${ri}`} onClick={e=>onRelClick(e,ent.id,rel.id)} style={{cursor:"pointer"}}><rect x={mx-lw/2} y={my-9} width={lw} height={17} rx={8} fill="white" stroke={col} strokeWidth="0.5" opacity="0.96"/><text x={mx} y={my+4} fontSize={11} fontWeight={hi?600:400} fill={col} textAnchor="middle">{cLabel}</text></g>;}))}
           </g>
+          {marquee&&<rect x={(Math.min(marquee.x1,marquee.x2)-pan.x)*zoom} y={(Math.min(marquee.y1,marquee.y2)-pan.y)*zoom} width={Math.abs(marquee.x2-marquee.x1)*zoom} height={Math.abs(marquee.y2-marquee.y1)*zoom} fill="rgba(26,115,232,0.08)" stroke="#1A73E8" strokeWidth={1} strokeDasharray="4 2" pointerEvents="none"/>}
         </svg>
         <div style={{position:"absolute",top:16,left:16,display:"flex",gap:8,alignItems:"center"}}><Btn small onClick={addObj}>+ Object</Btn><Btn small accent={connOn} onClick={()=>{if(!connOn){setSelId(null);setSelRelId(null);setMultiSel(new Set());multiOffsets.current={};}setConn(connOn?null:"");setConnDrag(null);}}>{connOn?(connHasSrc?"→ select target":"← select source"):<span style={{display:"inline-flex",alignItems:"center",gap:4}}><span className="msi" style={{fontSize:16}}>link</span> Connect</span>}</Btn>{onSplit&&<Btn small onClick={onSplit}><span style={{display:"inline-flex",alignItems:"center",gap:4}}><span className="msi" style={{fontSize:16}}>call_split</span> Split</span></Btn>}</div>
         <ZoomControls svgRef={svgRef} zoom={zoom} setZoom={setZoom} pan={pan} setPan={setPan}/>
@@ -202,8 +212,20 @@ function MapView({model,setModel,setModelSilent,onSelChange,savedViewState,onVie
   const[selNavId,setSelNavId]=useState(null),[selId,setSelId]=useState(null),[drag,setDrag]=useState(null),[conn,setConn]=useState(null),[connDrag,setConnDrag]=useState(null),[navDrag,setNavDrag]=useState(null),[editLabel,setEditLabel]=useState(false);
   const[multiSel,setMultiSel]=useState(new Set());
   const selVw=selId?model.views.find(s=>s.id===selId):null;
-  const canvas=useCanvas({items:model.views,itemW:SW,itemH:SH,savedViewState,onViewStateChange,loadGenRef,onEscape:useCallback(()=>{setMultiSel(new Set());multiOffsets.current={};setConnDrag(null);},[])});
-  const{svgRef,zoom,setZoom,pan,setPan,panning,spaceHeld}=canvas;
+  const canvas=useCanvas({items:model.views,itemW:SW,itemH:SH,savedViewState,onViewStateChange,loadGenRef,onEscape:useCallback(()=>{setMultiSel(new Set());multiOffsets.current={};setConnDrag(null);},[]),onMarqueeEnd:useCallback((rect,shift)=>{
+  const hit=new Set();
+  (model.views||[]).forEach(vw=>{
+    const fields=(vw.fields||[]).length;const verbs=(vw.verbs||[]).length;
+    const hasContent=fields>0||verbs>0;
+    const ch=36+(hasContent?8:40)+fields*22+(verbs>0?verbs*22+8:0)+8;
+    if(vw.x<rect.x+rect.w && vw.x+SW>rect.x && vw.y<rect.y+rect.h && vw.y+ch>rect.y) hit.add(vw.id);
+  });
+  if(hit.size===0)return;
+  if(shift){setMultiSel(prev=>{const next=new Set(prev);hit.forEach(id=>next.add(id));return next;});}
+  else{setMultiSel(hit);}
+  setSelId(null);setSelNavId(null);setEditLabel(false);multiOffsets.current={};
+},[model.views])});
+  const{svgRef,zoom,setZoom,pan,setPan,panning,spaceHeld,marquee}=canvas;
   const dOff=useRef({x:0,y:0}),didDrag=useRef(false),multiOffsets=useRef({});
   const multiSelRef=useRef(multiSel);
   multiSelRef.current=multiSel;
@@ -234,9 +256,9 @@ function MapView({model,setModel,setModelSilent,onSelChange,savedViewState,onVie
     <div style={{display:"flex",flexDirection:"column",height:"100%",position:"relative"}}>
       <div style={{flex:1,display:"flex",overflow:"hidden"}}>
         <div style={{flex:1,position:"relative",overflow:"hidden"}}>
-          <svg ref={svgRef} width="100%" height="100%" style={{cursor:spaceHeld?(panning?"grabbing":"grab"):connDrag?"grabbing":navDrag?"grabbing":drag?"grabbing":panning?"grabbing":connOn?"crosshair":"grab",display:"block",userSelect:connDrag||navDrag||drag||panning?"none":"auto"}} onMouseMove={onMM} onMouseUp={onUp} onMouseLeave={onUp} onWheel={canvas.onWheel} onClick={e=>{if(e.target===e.currentTarget||e.target.getAttribute('data-bg')){if(!connOn){setSelNavId(null);setSelId(null);setEditLabel(false);setMultiSel(new Set());multiOffsets.current={};}}}}>
+          <svg ref={svgRef} width="100%" height="100%" style={{cursor:spaceHeld?(panning?"grabbing":"grab"):connDrag?"grabbing":navDrag?"grabbing":drag?"grabbing":panning?"grabbing":connOn?"crosshair":"default",display:"block",userSelect:connDrag||navDrag||drag||panning?"none":"auto"}} onMouseMove={onMM} onMouseUp={onUp} onMouseLeave={onUp} onWheel={canvas.onWheel} onClick={e=>{if(e.target===e.currentTarget||e.target.getAttribute('data-bg')){if(!connOn){setSelNavId(null);setSelId(null);setEditLabel(false);setMultiSel(new Set());multiOffsets.current={};}}}}>
             <defs><pattern id="sdots" width={24/zoom} height={24/zoom} patternUnits="userSpaceOnUse" x={(-pan.x*zoom)%24} y={(-pan.y*zoom)%24}><circle cx={1/zoom} cy={1/zoom} r={1/zoom} fill="#E0E0E0"/></pattern><marker id="sarr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#9AA0A6"/></marker><marker id="sarr-hi" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#1A73E8"/></marker></defs>
-            <rect width="100%" height="100%" fill="url(#sdots)" data-bg="1" onMouseDown={e=>{if(spaceHeld||!connOn)canvas.onBgMouseDown(e);}}/>
+            <rect width="100%" height="100%" fill="url(#sdots)" data-bg="1" onMouseDown={e=>{if(connOn&&!spaceHeld)return;canvas.onBgMouseDown(e);}}/>
             <g transform={`scale(${zoom}) translate(${-pan.x},${-pan.y})`}>
             {/* 1. ビューカード（fields + verbs） */}
             {visVw.map(vw=>{const fields=vw.fields||[],verbs=vw.verbs||[],isConn=conn===vw.id,isSel=selId===vw.id||multiSel.has(vw.id);const hasContent=fields.length>0||verbs.length>0;const cardH=SC_HEADER_H+(hasContent?8:40)+fields.length*SC_OBJ_ROW_H+(verbs.length>0?verbs.length*SC_OBJ_ROW_H+8:0)+8;const p=objPalette(model.objects,vw.objectId);const dBg="white",dHdr=p.bg,dTxt=p.fg,dIcon=p.fg,dBorder=isConn?"#E37400":isSel?p.fg:p.bg,dBorderW=(isConn||isSel)?3:1.5;const typeIcon=vw.type==="single"?"article":"view_list";const fieldStartY=SC_OBJ_START_Y;const verbStartY=fieldStartY+fields.length*SC_OBJ_ROW_H+(verbs.length>0?4:0);return(<g key={vw.id} transform={`translate(${vw.x},${vw.y})`} onMouseDown={e=>onBoxMD(e,vw.id)} style={{cursor:connOn?"pointer":"grab"}}><rect x={1} y={2} width={SW} height={cardH} rx={14} fill="rgba(0,0,0,0.04)"/><rect width={SW} height={cardH} rx={14} fill={dBg}/><clipPath id={`clip-${vw.id}`}><rect width={SW} height={cardH} rx={14}/></clipPath><g clipPath={`url(#clip-${vw.id})`}><rect width={SW} height={SC_HEADER_H} fill={dHdr}/><line x1={0} y1={SC_HEADER_H} x2={SW} y2={SC_HEADER_H} stroke="#E0E0E0" strokeWidth="1"/><foreignObject x={0} y={0} width={SW} height={SC_HEADER_H}><div style={{display:"flex",alignItems:"center",gap:4,padding:"0 12px",height:SC_HEADER_H,boxSizing:"border-box"}}><span className="msi" style={{fontSize:18,color:dIcon}}>{typeIcon}</span><span style={{fontSize:14,fontWeight:500,color:dTxt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{viewLabel(vw,model.objects)}</span></div></foreignObject>{fields.map((f,fi)=>(<g key={`f-${fi}`} transform={`translate(0,${fieldStartY+fi*SC_OBJ_ROW_H})`}><text x={SC_OBJ_PAD_X+8} y={14} fontSize={11} fill="#5F6368" fontFamily="inherit">{f}</text></g>))}{verbs.length>0&&<line x1={SC_OBJ_PAD_X} y1={verbStartY-2} x2={SW-SC_OBJ_PAD_X} y2={verbStartY-2} stroke="#E0E0E0" strokeWidth="1" strokeDasharray="4 2"/>}{verbs.map((v,vi)=>(<g key={`v-${vi}`} transform={`translate(0,${verbStartY+vi*SC_OBJ_ROW_H})`}><text x={SC_OBJ_PAD_X+8} y={14} fontSize={11} fill="#7D5260" fontFamily="inherit">{v}</text></g>))}</g><rect width={SW} height={cardH} rx={14} fill="none" stroke={dBorder} strokeWidth={dBorderW}/></g>);})}
@@ -248,6 +270,7 @@ function MapView({model,setModel,setModelSilent,onSelChange,savedViewState,onVie
             {/* 3. ナビラベル（最前面） */}
             {visNav.map(nav=>{const src=findNode(nav.from),tgt=findNode(nav.to);if(!src||!tgt)return null;const isEmbed=(nav.type||"drilldown")==="embed";if(isEmbed)return null;const paramText=nav.param||nav.trigger||"";if(!paramText)return null;const fp=edgePt(src.x,src.y,SW,src.h,tgt.x+SW/2,tgt.y+tgt.h/2),tp=edgePt(tgt.x,tgt.y,SW,tgt.h,src.x+SW/2,src.y+src.h/2),mx=(fp.x+tp.x)/2,my=(fp.y+tp.y)/2,isSel=selNavId===nav.id,lblCol=isSel?"#1A73E8":"#9AA0A6";const isEditing=isSel&&editLabel;if(isEditing){const iw=Math.max(labelWidth(paramText),80);return<foreignObject key={`nb-${nav.id}`} x={mx-iw/2} y={my-11} width={iw} height={22}><input value={paramText} placeholder="パラメータ" onChange={e=>updNav({...nav,param:e.target.value})} autoFocus onClick={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} onBlur={()=>setEditLabel(false)} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();setEditLabel(false);}}} style={{width:"100%",height:"100%",border:"1px solid #1A73E8",borderRadius:10,background:"white",fontSize:11,textAlign:"center",outline:"none",padding:"0 6px",boxSizing:"border-box",fontFamily:"inherit"}}/></foreignObject>;}const lw=labelWidth(paramText);return(<g key={`nb-${nav.id}`} style={{cursor:"pointer"}} onClick={e=>{e.stopPropagation();if(isSel){setEditLabel(true);}else{setSelNavId(nav.id);setSelId(null);setEditLabel(false);}}}><rect x={mx-lw/2} y={my-10} width={lw} height={19} rx={10} fill={isSel?"#1A73E8":"white"} stroke={lblCol} strokeWidth="0.5"/><text x={mx} y={my+4} fontSize={11} fill={isSel?"white":"#5F6368"} textAnchor="middle" style={{pointerEvents:"none"}}>{paramText}</text></g>);})}
             </g>
+            {marquee&&<rect x={(Math.min(marquee.x1,marquee.x2)-pan.x)*zoom} y={(Math.min(marquee.y1,marquee.y2)-pan.y)*zoom} width={Math.abs(marquee.x2-marquee.x1)*zoom} height={Math.abs(marquee.y2-marquee.y1)*zoom} fill="rgba(26,115,232,0.08)" stroke="#1A73E8" strokeWidth={1} strokeDasharray="4 2" pointerEvents="none"/>}
           </svg>
           <div style={{position:"absolute",top:16,left:16,display:"flex",gap:8,alignItems:"center"}}>
             <Btn small onClick={()=>addView("collection")}><span style={{display:"inline-flex",alignItems:"center",gap:4}}><span className="msi" style={{fontSize:16}}>add_box</span> Pane</span></Btn>
@@ -320,8 +343,14 @@ function ScreenView({model,setModel,setModelSilent,onSelChange,onSplit,savedView
   const setSelId=id=>{selByDevice.current={...selByDevice.current,[deviceTab]:id};forceUpdate(n=>n+1);};
   const[showDeviceEdit,setShowDeviceEdit]=useState(false);
   const[drag,setDrag]=useState(null);
-  const canvas=useCanvas({items:(model.screens||[]).filter(s=>(s.device||devices[0])===deviceTab),itemW:SCR_MIN_W,itemH:100,savedViewState,onViewStateChange,loadGenRef,onEscape:useCallback(()=>{setSelId(null);},[])});
-  const{svgRef,zoom,setZoom,pan,setPan,panning,spaceHeld}=canvas;
+  const canvas=useCanvas({items:(model.screens||[]).filter(s=>(s.device||devices[0])===deviceTab),itemW:SCR_MIN_W,itemH:100,savedViewState,onViewStateChange,loadGenRef,onEscape:useCallback(()=>{setSelId(null);},[]),onMarqueeEnd:useCallback((rect,shift)=>{
+  const items2=(model.screens||[]).filter(s=>(s.device||(model.devices||["mobile"])[0])===deviceTab);
+  for(var i=0;i<items2.length;i++){
+    const sc=items2[i];const{w:cw,h:ch}=scrCardSize(sc,model.views,model.objects);
+    if((sc.x||0)<rect.x+rect.w && (sc.x||0)+cw>rect.x && (sc.y||0)<rect.y+rect.h && (sc.y||0)+ch>rect.y){setSelId(sc.id);return;}
+  }
+},[model.screens,model.views,model.objects,deviceTab])});
+  const{svgRef,zoom,setZoom,pan,setPan,panning,spaceHeld,marquee}=canvas;
   const dOff=useRef({x:0,y:0});
   const selScreen=selId?(model.screens||[]).find(s=>s.id===selId):null;
 
@@ -352,7 +381,7 @@ function ScreenView({model,setModel,setModelSilent,onSelChange,onSplit,savedView
       </div>
       <div style={{flex:1,display:"flex",overflow:"hidden"}}>
         <div style={{flex:1,position:"relative",overflow:"hidden"}}>
-          <svg ref={svgRef} width="100%" height="100%" style={{cursor:spaceHeld?(panning?"grabbing":"grab"):drag?"grabbing":panning?"grabbing":"grab",display:"block",userSelect:drag||panning?"none":"auto"}} onMouseMove={onMM} onMouseUp={onUp} onMouseLeave={onUp} onWheel={canvas.onWheel} onClick={e=>{if(e.target===e.currentTarget||e.target.getAttribute('data-bg')){setSelId(null);}}}>
+          <svg ref={svgRef} width="100%" height="100%" style={{cursor:spaceHeld?(panning?"grabbing":"grab"):drag?"grabbing":panning?"grabbing":"default",display:"block",userSelect:drag||panning?"none":"auto"}} onMouseMove={onMM} onMouseUp={onUp} onMouseLeave={onUp} onWheel={canvas.onWheel} onClick={e=>{if(e.target===e.currentTarget||e.target.getAttribute('data-bg')){setSelId(null);}}}>
             <defs><pattern id="scrdots" width={24/zoom} height={24/zoom} patternUnits="userSpaceOnUse" x={(-pan.x*zoom)%24} y={(-pan.y*zoom)%24}><circle cx={1/zoom} cy={1/zoom} r={1/zoom} fill="#E0E0E0"/></pattern><marker id="scrarr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#9AA0A6"/></marker></defs>
             <rect width="100%" height="100%" fill="url(#scrdots)" data-bg="1" onMouseDown={canvas.onBgMouseDown}/>
             <g transform={`scale(${zoom}) translate(${-pan.x},${-pan.y})`}>
@@ -402,6 +431,7 @@ function ScreenView({model,setModel,setModelSilent,onSelChange,onSplit,savedView
               return lines.map(({fid,tid,key,isEmbed})=>{const sf=items.find(s=>s.id===fid),st=items.find(s=>s.id===tid);if(!sf||!st)return null;const sfSize=scrCardSize(sf,model.views,model.objects),stSize=scrCardSize(st,model.views,model.objects);const f=edgePt(sf.x||0,sf.y||0,sfSize.w,sfSize.h,(st.x||0)+stSize.w/2,(st.y||0)+stSize.h/2),t=edgePt(st.x||0,st.y||0,stSize.w,stSize.h,(sf.x||0)+sfSize.w/2,(sf.y||0)+sfSize.h/2);return<line key={`se-${key}`} x1={f.x} y1={f.y} x2={t.x} y2={t.y} stroke="#9AA0A6" strokeWidth={1.5} markerEnd={isEmbed?undefined:"url(#scrarr)"}/>;});
             })()}
             </g>
+            {marquee&&<rect x={(Math.min(marquee.x1,marquee.x2)-pan.x)*zoom} y={(Math.min(marquee.y1,marquee.y2)-pan.y)*zoom} width={Math.abs(marquee.x2-marquee.x1)*zoom} height={Math.abs(marquee.y2-marquee.y1)*zoom} fill="rgba(26,115,232,0.08)" stroke="#1A73E8" strokeWidth={1} strokeDasharray="4 2" pointerEvents="none"/>}
           </svg>
           <div style={{position:"absolute",top:16,left:16,display:"flex",gap:8,alignItems:"center"}}><Btn small onClick={addScreen}><span style={{display:"inline-flex",alignItems:"center",gap:4}}><span className="msi" style={{fontSize:16}}>add_box</span> Screen</span></Btn>{onSplit&&<Btn small onClick={onSplit}><span style={{display:"inline-flex",alignItems:"center",gap:4}}><span className="msi" style={{fontSize:16}}>call_split</span> Split</span></Btn>}</div>
           <ZoomControls svgRef={svgRef} zoom={zoom} setZoom={setZoom} pan={pan} setPan={setPan}/>
