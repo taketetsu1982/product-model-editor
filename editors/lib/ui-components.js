@@ -124,6 +124,55 @@
     return {data:data, setData:setData, setDataSilent:setDataSilent, undo:undo, redo:redo, reset:reset, histRef:histRef, dirtyRef:dirtyRef};
   }
 
+  // バリアント サブタブバー
+  // props: { variants, onSwitch, onDuplicate, onDelete, onRename, onSplit, onKeep }
+  function VariantBar(props) {
+    var variants = props.variants, onSwitch = props.onSwitch, onDuplicate = props.onDuplicate;
+    var onDelete = props.onDelete, onRename = props.onRename, onSplit = props.onSplit, onKeep = props.onKeep;
+    var editingState = useState(null), editing = editingState[0], setEditing = editingState[1];
+    var editValueState = useState(''), editValue = editValueState[0], setEditValue = editValueState[1];
+
+    function startRename(v) { setEditing(v.id); setEditValue(v.name); }
+    function commitRename() {
+      if (editing && editValue.trim()) { onRename(editing, editValue.trim()); }
+      setEditing(null);
+    }
+
+    if (!variants || variants.length === 0) return null;
+
+    var tabs = variants.map(function(v) {
+      if (editing === v.id) {
+        return h("div", { key: v.id, className: "variant-tab active" },
+          h("input", {
+            value: editValue, autoFocus: true,
+            onChange: function(e) { setEditValue(e.target.value); },
+            onBlur: commitRename,
+            onKeyDown: function(e) { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditing(null); },
+            style: { border: "none", background: "transparent", outline: "none", width: 80, fontSize: 13, fontWeight: 500, fontFamily: "inherit", color: "inherit" }
+          })
+        );
+      }
+      return h("button", {
+        key: v.id,
+        className: "variant-tab" + (v.active ? " active" : ""),
+        onClick: function() { onSwitch(v.id); },
+        onDoubleClick: function() { startRename(v); }
+      },
+        v.name,
+        variants.length > 1 ? h("span", { className: "variant-close", onClick: function(e) { e.stopPropagation(); onDelete(v.id); } }, "\u00d7") : null
+      );
+    });
+
+    return h("div", { className: "variant-bar" },
+      tabs,
+      h("button", { className: "variant-action-btn", onClick: onDuplicate }, "+ Duplicate"),
+      h("div", { className: "variant-bar-actions" },
+        variants.length >= 2 ? h("button", { className: "variant-action-btn", onClick: onSplit }, "Split") : null,
+        h("button", { className: "variant-action-btn keep", onClick: onKeep }, "Keep")
+      )
+    );
+  }
+
   exports.M3 = M3;
   exports.Input = Input;
   exports.Sel = Sel;
@@ -131,5 +180,6 @@
   exports.SLabel = SLabel;
   exports.useInitialPan = useInitialPan;
   exports.useHistory = useHistory;
+  exports.VariantBar = VariantBar;
 
 })(window.__editorUI = window.__editorUI || {});

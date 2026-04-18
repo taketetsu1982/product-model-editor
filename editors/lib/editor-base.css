@@ -45,3 +45,16 @@ body{font-family:'Google Sans','Roboto','Noto Sans JP',system-ui,sans-serif;colo
 .ed-auto-switch.active .ed-switch-track{background:#0B57D0}
 .ed-auto-switch .ed-switch-thumb{position:absolute;top:3px;left:3px;width:12px;height:12px;background:var(--md-sys-color-surface-container-lowest);border-radius:50%;transition:left .2s}
 .ed-auto-switch.active .ed-switch-thumb{left:17px}
+
+/* --- バリアント サブタブバー --- */
+.variant-bar{display:flex;align-items:center;gap:4px;padding:4px 16px;background:var(--md-sys-color-surface-container-low);border-bottom:1px solid var(--md-sys-color-outline-variant);min-height:36px}
+.variant-tab{display:flex;align-items:center;gap:4px;padding:4px 12px;border-radius:var(--md-sys-shape-full);border:1px solid transparent;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--md-sys-color-on-surface-variant);font-family:inherit;transition:background .15s}
+.variant-tab:hover{background:var(--md-sys-color-surface-container)}
+.variant-tab.active{background:var(--md-sys-color-primary-container);color:var(--md-sys-color-on-primary-container);border-color:var(--md-sys-color-outline-variant)}
+.variant-tab .variant-close{display:none;margin-left:4px;font-size:14px;opacity:.5;cursor:pointer;line-height:1}
+.variant-tab:hover .variant-close{display:inline}
+.variant-tab .variant-close:hover{opacity:1}
+.variant-bar-actions{margin-left:auto;display:flex;gap:4px;align-items:center}
+.variant-action-btn{padding:4px 12px;border-radius:var(--md-sys-shape-full);border:1px solid var(--md-sys-color-outline-variant);background:transparent;cursor:pointer;font-size:12px;font-weight:500;color:var(--md-sys-color-on-surface-variant);font-family:inherit;transition:background .15s}
+.variant-action-btn:hover{background:var(--md-sys-color-surface-container)}
+.variant-action-btn.keep{color:var(--md-sys-color-primary);border-color:var(--md-sys-color-primary)}
