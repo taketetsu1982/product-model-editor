@@ -48,15 +48,14 @@ body{font-family:'Google Sans','Roboto','Noto Sans JP',system-ui,sans-serif;colo
 
 /* --- バリアント サブタブバー --- */
 .variant-bar{display:flex;align-items:stretch;padding:0 16px;background:var(--md-sys-color-surface-container-low);border-bottom:1px solid var(--md-sys-color-outline-variant);min-height:36px}
-.variant-tab{display:flex;align-items:center;gap:4px;padding:0 12px;border:none;border-bottom:2px solid transparent;border-top:2px solid transparent;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--md-sys-color-on-surface-variant);font-family:inherit;transition:color .15s}
+.variant-tab{position:relative;display:flex;align-items:center;gap:6px;padding:0 12px;border:none;border-bottom:2px solid transparent;border-top:2px solid transparent;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--md-sys-color-on-surface-variant);font-family:inherit;transition:color .15s;white-space:nowrap}
 .variant-tab:hover{color:var(--md-sys-color-on-surface)}
 .variant-tab.active{color:var(--md-sys-color-primary);border-bottom-color:var(--md-sys-color-primary)}
-.variant-tab .variant-close{display:none;margin-left:4px;font-size:14px;opacity:.5;cursor:pointer;line-height:1}
 .variant-action-btn{padding:4px 12px;border-radius:var(--md-sys-shape-full);border:1px solid var(--md-sys-color-outline-variant);background:transparent;cursor:pointer;font-size:12px;font-weight:500;color:var(--md-sys-color-on-surface-variant);font-family:inherit;transition:background .15s}
 .variant-action-btn:hover{background:var(--md-sys-color-surface-container)}
-.variant-more-btn{border:none;background:transparent;cursor:pointer;font-size:16px;color:var(--md-sys-color-primary);padding:0 2px;line-height:1;border-radius:var(--md-sys-shape-full);transition:background .15s;align-self:center}
-.variant-more-btn:hover{background:var(--md-sys-color-surface-container)}
-.variant-menu{position:absolute;top:100%;left:0;margin-top:4px;background:#fff;border:1px solid var(--md-sys-color-outline-variant);border-radius:var(--md-sys-shape-sm);box-shadow:var(--md-sys-elevation-2);min-width:120px;z-index:20;padding:4px 0}
+.variant-more-btn{cursor:pointer;font-size:16px;color:inherit;padding:2px 4px;line-height:1;border-radius:var(--md-sys-shape-full);transition:background .15s}
+.variant-more-btn:hover{background:rgba(0,0,0,.06)}
+.variant-menu{position:absolute;top:100%;left:0;margin-top:2px;background:#fff;border:1px solid var(--md-sys-color-outline-variant);border-radius:var(--md-sys-shape-sm);box-shadow:var(--md-sys-elevation-2);min-width:120px;z-index:20;padding:4px 0}
 .variant-menu-item{display:block;width:100%;padding:6px 16px;border:none;background:transparent;cursor:pointer;font-size:13px;color:var(--md-sys-color-on-surface);font-family:inherit;text-align:left;transition:background .1s}
 .variant-menu-item:hover{background:var(--md-sys-color-surface-container)}
 .variant-menu-primary{color:var(--md-sys-color-primary)}

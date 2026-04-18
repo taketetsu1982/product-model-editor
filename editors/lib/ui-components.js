@@ -155,8 +155,9 @@
     }
 
     var tabs = variants.map(function(v) {
+      var isActive = v.active;
       if (editing === v.id) {
-        return h("div", { key: v.id, className: "variant-tab active", style: { position: "relative" } },
+        return h("div", { key: v.id, className: "variant-tab active" },
           h("input", {
             value: editValue, autoFocus: true,
             onChange: function(e) { setEditValue(e.target.value); },
@@ -166,15 +167,15 @@
           })
         );
       }
-      var isActive = v.active;
-      return h("div", { key: v.id, style: { position: "relative", display: "flex", alignItems: "center" } },
-        h("button", {
-          className: "variant-tab" + (isActive ? " active" : ""),
-          onClick: function() { onSwitch(v.id); setMenuId(null); },
-          onDoubleClick: function() { startRename(v); }
-        }, v.name),
-        // アクティブタブに ⋯ ボタンを表示
-        isActive ? h("button", {
+      return h("button", {
+        key: v.id,
+        className: "variant-tab" + (isActive ? " active" : ""),
+        onClick: function() { onSwitch(v.id); setMenuId(null); },
+        onDoubleClick: function() { startRename(v); }
+      },
+        v.name,
+        // アクティブタブに ⋯ を内包（下線がタブ全体に渡る）
+        isActive ? h("span", {
           className: "variant-more-btn",
           onClick: function(e) { e.stopPropagation(); setMenuId(menuId === v.id ? null : v.id); }
         }, "\u22EF") : null,
