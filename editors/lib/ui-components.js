@@ -198,6 +198,13 @@
       };
     }, []);
 
+    // マーキー選択（矩形範囲選択）
+    var marqueeState = useState(null), marquee = marqueeState[0], setMarquee = marqueeState[1];
+    var marqueeRef = useRef(null);
+    var marqueeShift = useRef(false);
+    var onMarqueeEndRef = useRef(config.onMarqueeEnd);
+    onMarqueeEndRef.current = config.onMarqueeEnd;
+
     var onWheel = useCallback(function(e) {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
@@ -217,26 +224,68 @@
     }, [zoom, pan]);
 
     var onBgMouseDown = useCallback(function(e) {
-      setPanning(true);
-      panStart.current = {x: e.clientX, y: e.clientY, px: pan.x, py: pan.y};
-    }, [pan]);
+      if (spaceHeld) {
+        setPanning(true);
+        panStart.current = {x: e.clientX, y: e.clientY, px: pan.x, py: pan.y};
+      } else {
+        if (!svgRef.current) return;
+        var r = svgRef.current.getBoundingClientRect();
+        var cx = (e.clientX - r.left) / zoom + pan.x;
+        var cy = (e.clientY - r.top) / zoom + pan.y;
+        var m = {x1: cx, y1: cy, x2: cx, y2: cy};
+        marqueeRef.current = m;
+        setMarquee(m);
+        marqueeShift.current = e.shiftKey;
+      }
+    }, [pan, zoom, spaceHeld]);
 
     var onMouseMove = useCallback(function(e) {
-      if (!panning) return false;
-      setPan({
-        x: panStart.current.px - (e.clientX - panStart.current.x) / zoom,
-        y: panStart.current.py - (e.clientY - panStart.current.y) / zoom
-      });
-      return true;
-    }, [panning, zoom]);
+      if (panning) {
+        setPan({
+          x: panStart.current.px - (e.clientX - panStart.current.x) / zoom,
+          y: panStart.current.py - (e.clientY - panStart.current.y) / zoom
+        });
+        return true;
+      }
+      if (marqueeRef.current) {
+        if (!svgRef.current) return true;
+        var r = svgRef.current.getBoundingClientRect();
+        var cx = (e.clientX - r.left) / zoom + pan.x;
+        var cy = (e.clientY - r.top) / zoom + pan.y;
+        var updated = {x1: marqueeRef.current.x1, y1: marqueeRef.current.y1, x2: cx, y2: cy};
+        marqueeRef.current = updated;
+        setMarquee(updated);
+        return true;
+      }
+      return false;
+    }, [panning, zoom, pan]);
 
     var onMouseUpOrLeave = useCallback(function() {
+      var m = marqueeRef.current;
+      if (m) {
+        try {
+          var rect = {
+            x: Math.min(m.x1, m.x2),
+            y: Math.min(m.y1, m.y2),
+            w: Math.abs(m.x2 - m.x1),
+            h: Math.abs(m.y2 - m.y1)
+          };
+          if (rect.w > 2 || rect.h > 2) {
+            if (onMarqueeEndRef.current) onMarqueeEndRef.current(rect, marqueeShift.current);
+          }
+        } finally {
+          marqueeRef.current = null;
+          setMarquee(null);
+        }
+        return;
+      }
       setPanning(false);
     }, []);
 
     return {
       svgRef: svgRef, zoom: zoom, setZoom: setZoom, pan: pan, setPan: setPan,
-      panning: panning, spaceHeld: spaceHeld, onWheel: onWheel, onBgMouseDown: onBgMouseDown,
+      panning: panning, spaceHeld: spaceHeld, marquee: marquee,
+      onWheel: onWheel, onBgMouseDown: onBgMouseDown,
       onMouseMove: onMouseMove, onMouseUpOrLeave: onMouseUpOrLeave
     };
   }
